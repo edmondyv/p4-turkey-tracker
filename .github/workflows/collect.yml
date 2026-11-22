@@ -59,7 +59,9 @@ jobs:
             publish
             elapsed=$(( ($(date +%s) - start) / 60 ))
             if [ "$LOOP_MINUTES" -le 0 ] || [ "$elapsed" -ge "$LOOP_MINUTES" ]; then break; fi
-            now=$(date +%s); sleep $(( 300 - (now % 300) + 240 ))  # 4 min after a 5-min mark: :04, :09, :14, :19 in each Turkey cycle
+            # next wake-up when (time mod 5 min) = 4 min: :04, :09, :14 and :19 after each landing.
+            # The :19 one (1 min before the next Turkey lands) is the reference snapshot.
+            now=$(date +%s); wait=$(( (240 - now % 300 + 600) % 300 )); [ "$wait" -lt 30 ] && wait=$(( wait + 300 )); sleep "$wait"
           done
 
       - name: Start the next watch run
