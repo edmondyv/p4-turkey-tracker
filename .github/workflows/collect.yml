@@ -1,48 +1,67 @@
 name: collect
 
+# Two ways this runs:
+# - a "watch" run (loop_minutes > 0) collects every 5 minutes for almost 6 hours, then starts the
+#   next watch run itself, so the collector doesn't depend on GitHub's cron timing;
+# - the */5 schedule is a backup: it skips itself when the data was refreshed less than 4 minutes ago.
 on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
+    inputs:
+      loop_minutes:
+        description: "Keep collecting for this many minutes (0 = single run)"
+        default: "0"
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
-  group: collect
+  group: ${{ (github.event.inputs.loop_minutes != '' && github.event.inputs.loop_minutes != '0') && 'watch' || 'single' }}
   cancel-in-progress: false
 
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 358
+    env:
+      DATA_DIR: out
+      LEAGUE_NAME: P4
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      LOOP_MINUTES: ${{ github.event.inputs.loop_minutes || '0' }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Load previous data
-        run: |
-          mkdir -p out
-          if git fetch --depth=1 origin data 2>/dev/null; then
-            git show origin/data:history.json > out/history.json 2>/dev/null || true
-          fi
-
       - name: Collect
-        run: node scripts/collect.mjs
-        env:
-          DATA_DIR: out
-          LEAGUE_NAME: P4
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-
-      - name: Publish to the data branch (single commit, force-pushed)
-        working-directory: out
         run: |
-          [ -f dashboard.json ] || exit 0
-          git init -q -b data
-          git config user.name "p4-collector"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add history.json dashboard.json
-          git commit -q -m "data $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git fetch -q --depth=1 origin data 2>/dev/null || true
+          fresh() {  # seconds since the data branch was last written
+            git rev-parse -q --verify origin/data >/dev/null || { echo 99999; return; }
+            echo $(( $(date +%s) - $(git log -1 --format=%ct origin/data) ))
+          }
+          publish() {
+            [ -f out/dashboard.json ] || return 0
+            rm -rf pub && mkdir pub && cp out/history.json out/dashboard.json pub/
+            (cd pub && git init -q -b data && git config user.name "p4-collector" \
+              && git config user.email "41898282+github-actions[bot]@users.noreply.github.com" \
+              && git add -A && git commit -q -m "data $(date -u +%Y-%m-%dT%H:%MZ)" \
+              && git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data) || echo "publish failed"
+          }
+          mkdir -p out
+          if [ "$LOOP_MINUTES" -le 0 ] && [ "$(fresh)" -lt 240 ]; then echo "Data is fresh (watch run active), skipping"; exit 0; fi
+          git show origin/data:history.json > out/history.json 2>/dev/null || true
+          start=$(date +%s)
+          while true; do
+            node scripts/collect.mjs || echo "collect failed"
+            publish
+            elapsed=$(( ($(date +%s) - start) / 60 ))
+            if [ "$LOOP_MINUTES" -le 0 ] || [ "$elapsed" -ge "$LOOP_MINUTES" ]; then break; fi
+            now=$(date +%s); sleep $(( 300 - (now % 300) + 60 ))  # 1 min after the next 5-min mark
+          done
+
+      - name: Start the next watch run
+        if: ${{ always() && github.event.inputs.loop_minutes != '' && github.event.inputs.loop_minutes != '0' }}
+        run: gh workflow run collect.yml --repo "$GITHUB_REPOSITORY" --ref main -f loop_minutes="$LOOP_MINUTES"
