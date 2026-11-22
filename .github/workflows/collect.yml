@@ -59,7 +59,7 @@ jobs:
             publish
             elapsed=$(( ($(date +%s) - start) / 60 ))
             if [ "$LOOP_MINUTES" -le 0 ] || [ "$elapsed" -ge "$LOOP_MINUTES" ]; then break; fi
-            now=$(date +%s); sleep $(( 300 - (now % 300) + 60 ))  # 1 min after the next 5-min mark
+            now=$(date +%s); sleep $(( 300 - (now % 300) + 240 ))  # 4 min after a 5-min mark: :04, :09, :14, :19 in each Turkey cycle
           done
 
       - name: Start the next watch run
