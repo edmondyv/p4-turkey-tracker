@@ -66,7 +66,7 @@ await fs.rm("/tmp/p4data", { recursive: true, force: true });
 const { main } = await import("../scripts/collect.mjs");
 const CYCLES = +(process.argv[2] || 90);
 for (let c = 0; c < CYCLES; c++) {
-  for (const off of [60, 240, 600, 900]) {
+  for (const off of [60, 240, 600, 900, 1140]) {
     NOW = START + c * CYCLE + off; process.env.FAKE_NOW = String(NOW);
     await main();
   }

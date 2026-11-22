@@ -251,7 +251,7 @@ footer a{color:var(--mute)}
       <div class="mini">
         <div><b class="num" id="tLeft">–</b><small>Turkeys left</small></div>
         <div><b class="num" id="hLeft">–</b><small>Until the end</small></div>
-        <div><b class="num" id="lastT">–</b><small>Our last Turkey</small></div>
+        <div><b class="num" id="thisT">–</b><small id="thisTl">This Turkey so far</small></div>
       </div>
       <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between"><span>Our last 12 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:var(--leaf)"></i>2k</span><span><i style="background:var(--caramel)"></i>partial</span><span><i style="background:var(--apple)"></i>none</span></span></div>
       <div class="strip" id="strip" title="Team points on each Turkey: 2k means both pairs killed"></div>
@@ -276,13 +276,13 @@ footer a{color:var(--mute)}
     </section>
 
     <section class="card rivals" aria-label="Rivals">
-      <header><h2>Rivals around us</h2><span class="mute">Pace = points per Turkey, last hour</span></header>
-      <div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th class="r">Points</th><th class="r">Gap</th><th class="r">Pace</th><th class="r hide-s">1 h</th><th class="r" title="Rank change if both keep last hour's pace">Swap</th></tr></thead><tbody id="rivalsBody"></tbody></table></div>
+      <header><h2>Rivals around us</h2><span class="mute" id="rivNote">Points per Turkey</span></header>
+      <div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th class="r">Points</th><th class="r">Gap</th><th class="r" title="Points on the last completed Turkey">Last</th><th class="r hide-s" title="Average points per Turkey over the last hour">1 h pace</th><th class="r" title="Rank change if both keep last hour's pace">Swap</th></tr></thead><tbody id="rivalsBody"></tbody></table></div>
     </section>
 
     <section class="card top20" aria-label="Top 20">
-      <header><h2>Top 20 live</h2><span class="mute">Last Turkey</span></header>
-      <div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th class="r">Points</th><th class="r">Last</th><th class="r hide-s">Pace</th></tr></thead><tbody id="topBody"></tbody></table></div>
+      <header><h2>Top 20 live</h2><span class="mute" id="topNote">Last Turkey</span></header>
+      <div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th class="r">Points</th><th class="r">Last</th><th class="r hide-s">1 h pace</th></tr></thead><tbody id="topBody"></tbody></table></div>
     </section>
 
     <section class="card chart" aria-label="Gap to the top 100 over time">
@@ -432,18 +432,25 @@ function renderPace(d) {
     v.className = "verdict " + (ok ? "good" : cur >= p.need100 * .95 ? "meh" : "bad");
     v.textContent = ok ? `On track for the top 100. Keep ${k(p.need100)} per Turkey or more.` : `Need ${k(p.need100)} per Turkey from now on to reach the top 100. We're doing ${k(cur)}.`;
   }
-  $("lastT").textContent = k(p.last);
+  const lt = d.ref && d.ref.lastTurkeyAt;
+  const lbl = lt ? `${hm(lt)} Turkey` : "Last Turkey";
+  const pl = $("paceRows").querySelector(".prow .lab"); if (pl) pl.textContent = lt ? hm(lt) + " Turkey" : "Last Turkey";
+  $("rivNote").textContent = lt ? `Last = ${lbl}` : "Points per Turkey"; $("topNote").textContent = lbl;
+  const tt = p.thisTurkey || {};
+  const pairsIn = PAIRS.filter((pr) => pr.some((u) => (tt.scored || []).includes(u))).length;
+  $("thisT").textContent = tt.pts == null ? "–" : "+" + k(tt.pts);
+  $("thisTl").textContent = tt.s ? `${hm(tt.s)} Turkey, ${pairsIn}/2 pairs in` : "This Turkey so far";
   const tk = (p.turkeys || []).slice(-12), full2 = 2000;
   $("strip").innerHTML = tk.map((t) => { const v = t.pts; const cls = v == null ? "na" : v <= 0 ? "zero" : v < full2 * .9 ? "half" : ""; return `<div class="${cls}" style="height:${v == null ? 4 : Math.max(4, Math.min(1, v / 2500) * 42)}px" title="${hm(t.s)} Turkey: ${v == null ? "no data" : full(v)}"></div>`; }).join("");
 }
 
 function renderTables(d) {
-  const arrow = (n) => n == null || n === 0 ? '<span class="dim">·</span>' : n > 0 ? `<span class="up">▲${n}</span>` : `<span class="down">▼${-n}</span>`;
+  const arrow = (n) => n == null || n === 0 ? "" : n > 0 ? `<span class="up">▲${n}</span>` : `<span class="down">▼${-n}</span>`;
   $("rivalsBody").innerHTML = d.rivals.map((r) => {
     const eta = r.me ? "" : r.eta == null ? '<span class="dim">–</span>' : r.gap > 0 ? `<span class="pill g" title="We pass them in ${r.eta} Turkeys">+1 in ${r.eta}</span>` : `<span class="pill r" title="They pass us in ${r.eta} Turkeys">−1 in ${r.eta}</span>`;
-    return `<tr class="${r.me ? "me" : ""}${r.r === 101 ? " cut" : ""}"><td class="num">${r.r}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.gap > 0 ? "down" : r.gap < 0 ? "up" : ""}">${r.me ? "" : sgn(r.gap)}</td><td class="r num">${k(r.h1 ?? r.since)}</td><td class="r hide-s">${arrow(r.dr1h)}</td><td class="r">${eta}</td></tr>`;
+    return `<tr class="${r.me ? "me" : ""}${r.r === 101 ? " cut" : ""}"><td class="num">${r.r} <small>${arrow(r.dr1h)}</small></td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.gap > 0 ? "down" : r.gap < 0 ? "up" : ""}">${r.me ? "" : sgn(r.gap)}</td><td class="r num ${r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}">${k(r.last)}</td><td class="r num hide-s">${k(r.h1)}</td><td class="r">${eta}</td></tr>`;
   }).join("");
-  $("topBody").innerHTML = d.top20.map((r) => `<tr><td class="num">${r.r}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}">${k(r.last)}</td><td class="r num hide-s">${k(r.h1 ?? r.since)}</td></tr>`).join("");
+  $("topBody").innerHTML = d.top20.map((r) => `<tr><td class="num">${r.r}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}">${k(r.last)}</td><td class="r num hide-s">${k(r.h1)}</td></tr>`).join("");
 }
 
 function svgEl(w, h, inner, label) { return `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="${esc(label)}">${inner}</svg>`; }
@@ -472,7 +479,7 @@ function renderDist(d) {
   const W = 360, H = 190, L = 6, B = 24, bw = (W - 2 * L) / h.hist.length, mx = Math.max(...h.hist, 1);
   const me = d.p4.h1, c100 = (d.marks.find((m) => m.r === 100) || {}).h1;
   const bx = (v) => v == null ? null : L + Math.min(h.bins.length - .01, v / 500) * bw;
-  let g = h.hist.map((n, i) => { const bh = (H - B - 34) * n / mx; return `<rect x="${L + i * bw + 3}" y="${H - B - bh}" width="${bw - 6}" height="${Math.max(bh, 2)}" rx="5" fill="${h.bins[i] >= 2500 ? "#f6a93b" : h.bins[i] >= 2000 ? "#b58fd6" : "#4b2c58"}"/>${n ? `<text x="${L + i * bw + bw / 2}" y="${H - B - bh - 4}" text-anchor="middle" style="fill:#c8a6c8">${n}</text>` : ""}<text x="${L + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${h.bins[i] / 1000}k</text>`; }).join("");
+  let g = h.hist.map((n, i) => { const bh = (H - B - 34) * n / mx; return `<rect x="${L + i * bw + 3}" y="${H - B - bh}" width="${bw - 6}" height="${Math.max(bh, 2)}" rx="5" fill="${h.bins[i] >= 2500 ? "#f6a93b" : h.bins[i] >= 2000 ? "#b58fd6" : "#4b2c58"}"/>${n ? `<text x="${L + i * bw + bw / 2}" y="${H - B - bh - 4}" text-anchor="middle" style="fill:#c8a6c8">${n}</text>` : ""}<text x="${L + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${h.bins[i] / 1000}k${i === h.bins.length - 1 ? "+" : ""}</text>`; }).join("");
   if (me != null) g += `<line x1="${bx(me)}" x2="${bx(me)}" y1="18" y2="${H - B}" stroke="#ffd08a" stroke-width="2.5" stroke-dasharray="4 3"/><rect x="${bx(me) - 14}" y="0" width="28" height="16" rx="8" fill="#ffd08a"/><text x="${bx(me)}" y="12" text-anchor="middle" style="fill:#13091a;font-weight:800">P4</text>`;
   $("distBox").innerHTML = svgEl(W, H, g, "Distribution of points per Turkey in the top 100") +
     `<div class="mute" style="font-size:12.5px;margin-top:6px">Median <b class="num" style="color:var(--ink)">${k(h.median)}</b> per Turkey. ${h.above2k} of ${h.n} teams score more than 2k: they kill solo.${c100 != null ? ` #100 does ${k(c100)}.` : ""}</div>`;
@@ -492,7 +499,7 @@ function render() {
   if (!D || !D.p4) return;
   renderHero(D); renderSquad(D); renderPace(D); renderTables(D); renderChart(D); renderDist(D); renderSide(D); tick();
   $("upd").innerHTML = `<span class="hide-xs">Updated </span>${hm(D.updatedAt)}`;
-  $("foot").textContent = `Data from BIG Games' public API, last snapshot ${ago(D.updatedAt)}. ${D.season.totalLeagues ? full(D.season.totalLeagues) + " leagues in the season." : ""}`;
+  $("foot").textContent = `Data from BIG Games' public API, last snapshot ${ago(D.updatedAt)}.${D.ref ? ` Per-Turkey numbers use the snapshot of ${hm(D.ref.takenAt)}, taken while no Turkey was up.` : ""}`;
   firstPaint = false;
 }
 async function load() {

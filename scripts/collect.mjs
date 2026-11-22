@@ -92,17 +92,39 @@ async function alarm(title, body) {
 }
 
 // ---------- history helpers
-// history.cycles: one snapshot per cycle, taken as close as possible to 4 min after the
-// Turkey lands. By then the previous Turkey's points are in, and nobody has killed the new
-// one yet, so the difference between two consecutive snapshots = points from one Turkey.
-const IDEAL = 240, LATE = 330;
+// Points are credited at the moment of each kill, and strong teams kill a Turkey within 1-3 minutes
+// of it landing. The only moment when no Turkey can be killed is between 15 min after a landing
+// (it flies off) and the next landing at 20 min. So the reference snapshot for each boundary
+// (a landing time b) is ideally taken 16.5-20 min after the previous landing, i.e. just BEFORE b.
+// Fallbacks: the very first ~75 s after b (data is cached up to 60 s, nobody has killed yet),
+// then up to 5 min after b (may already include a few very fast kills).
+// Mid-fight snapshots are used for the live ranking only, never for per-Turkey numbers.
+// A record keyed b holds the totals after every Turkey that landed before b, so
+// points of the Turkey that landed at b-20min = rec(b) - rec(b-20min).
+const CLOSE_MIN = 990, OPEN_SAFE = 75, OPEN_MAX = 300;
+function boundaryOf(t) {
+  const s = t - (t % CYCLE), off = t - s;
+  if (off >= CLOSE_MIN) return { b: s + CYCLE, score: Math.abs(off - 1140) };   // best: about 1 min before the next landing
+  if (off <= OPEN_SAFE) return { b: s, score: 500 + off };                    // good: first minute after the landing
+  if (off <= OPEN_MAX) return { b: s, score: 1000 + off };                    // last resort
+  return null;
+}
 function upsertCycle(cycles, rec) {
-  const last = cycles[cycles.length - 1];
-  if (!last || last.s < rec.s) { cycles.push(rec); return; }
-  if (last.s !== rec.s) return;
-  const oldOff = last.t - last.s, newOff = rec.t - rec.s;
-  const better = (oldOff < 180 && newOff <= LATE) || (Math.abs(newOff - IDEAL) < Math.abs(oldOff - IDEAL) && newOff <= LATE);
-  if (better) cycles[cycles.length - 1] = rec;
+  const bo = boundaryOf(rec.t);
+  if (!bo) return false;
+  const r = { ...rec, s: bo.b, q: bo.score };
+  const i = cycles.findIndex((c) => c.s === bo.b);
+  if (i === -1) { cycles.push(r); cycles.sort((a, b) => a.s - b.s); return true; }
+  if (bo.score < (cycles[i].q ?? 9999)) { cycles[i] = r; return true; }
+  return false;
+}
+// one-off migration of records stored with the old rule (keyed by the slot they were taken in)
+function migrate(hist) {
+  if (hist.v === 3) return;
+  const old = hist.cycles || [];
+  hist.cycles = [];
+  for (const c of old) upsertCycle(hist.cycles, { t: c.t, p: c.p, m: c.m });
+  hist.v = 3;
 }
 
 function makePace(cycles) {
@@ -138,7 +160,8 @@ export async function main() {
 
   const season = await api("/v1/leagues/seasons/active");
   if (!season || !season.id) { console.log("API unavailable, nothing written"); return; }
-  if (hist.season !== season.id) hist = { season: season.id, cycles: [], alerts: {}, log: [], flags: {} };
+  if (hist.season !== season.id) hist = { season: season.id, cycles: [], alerts: {}, log: [], flags: {}, v: 3 };
+  migrate(hist);
   hist.alerts ||= {}; hist.log ||= []; hist.flags ||= {};
   const live = season.state === "live";
   const q = `season=${encodeURIComponent(season.id)}`;
@@ -179,7 +202,7 @@ export async function main() {
   const pts = Object.fromEntries(rows.map((r) => [r.n, r.p]));
   if (p4) pts[LEAGUE] = p4.points;
   const m = p4 ? Object.fromEntries(p4.members.map((x) => [x.uid, x.points])) : {};
-  if (live) upsertCycle(hist.cycles, { s: s0, t: now, p: pts, m });
+  if (live) upsertCycle(hist.cycles, { t: now, p: pts, m });
   if (hist.cycles.length > MAX_CYCLES) hist.cycles = hist.cycles.slice(-MAX_CYCLES);
   const cycles = hist.cycles;
   const pace = makePace(cycles);
@@ -188,11 +211,12 @@ export async function main() {
   const turkeysElapsed = Math.max(1, Math.floor((now - startTime) / CYCLE));
   const turkeysLeft = season.finishTime ? Math.max(0, Math.floor((season.finishTime - now) / CYCLE)) : 0;
 
+  // Paces are points per Turkey over the last 1, 3, 9, 18 and 72 Turkeys (last Turkey, 1 h, 3 h, 6 h, 24 h).
+  // The finish projection uses the 24 h pace (it includes nights), or the since-start average until
+  // a full day of history exists.
   const teamStats = (n, p) => {
-    const h1 = pace(n, 3), h6 = pace(n, 18);
-    const since = p / turkeysElapsed;
-    const proj = p + (h6 ?? h1 ?? since) * turkeysLeft;
-    return { last: round(pace(n, 1)), h1: round(h1), h3: round(pace(n, 9)), h6: round(h6), since: round(since), proj: round(proj) };
+    const since = p / turkeysElapsed, h24 = pace(n, 72);
+    return { last: round(pace(n, 1)), h1: round(pace(n, 3)), h3: round(pace(n, 9)), h6: round(pace(n, 18)), h24: round(h24), since: round(since), proj: round(p + (h24 ?? since) * turkeysLeft) };
   };
   const rankAgo = (k) => {
     const c = cycles.find((x) => x.s === lastS - k * CYCLE);
@@ -235,13 +259,25 @@ export async function main() {
     const med = (k) => round(quant(pack.map((r) => pace(r.n, k)).filter((v) => v != null), 0.5));
     const myNow = me.h1 ?? me.h6 ?? me.since;
     const packNow = pack.map((r) => pace(r.n, 3) ?? sinceOf(r));
-    const myLong = pace(LEAGUE, 18) ?? pace(LEAGUE, 3) ?? p4.points / turkeysElapsed;
-    const projRank = (k) => 1 + rows.filter((r) => r.n !== LEAGUE && r.p + (pace(r.n, 18) ?? pace(r.n, 3) ?? sinceOf(r)) * k > p4.points + myLong * k).length;
+    // projected rank: every top-300 team extended at its own pace (recent pace for short horizons,
+    // 24 h pace for the finish because it includes nights)
+    const paceFor = (n, p, horizon) => horizon === "h3" ? (pace(n, 9) ?? pace(n, 3) ?? p / turkeysElapsed)
+      : horizon === "h12" ? (pace(n, 18) ?? pace(n, 9) ?? pace(n, 3) ?? p / turkeysElapsed)
+      : (pace(n, 72) ?? p / turkeysElapsed);
+    const projRank = (k, horizon) => {
+      const mine = p4.points + paceFor(LEAGUE, p4.points, horizon) * k;
+      return 1 + rows.filter((r) => r.n !== LEAGUE && r.p + paceFor(r.n, r.p, horizon) * k > mine).length;
+    };
     const packOut = { n: pack.length, from: myR0 - pack.length, last: med(1), h1: med(3), h6: med(18), since: round(quant(pack.map(sinceOf), 0.5)),
       slower: packNow.filter((v) => v < myNow).length };
-    const projRanks = { h3: projRank(9), h12: projRank(36), finish: projRank(turkeysLeft) };
+    const projRanks = { h3: projRank(9, "h3"), h12: projRank(36, "h12"), finish: projRank(turkeysLeft, "finish") };
+    const openRec = cycles.find((c) => c.s === s0);
+    const thisTurkey = openRec && openRec.p[LEAGUE] != null ? {
+      s: s0, pts: p4.points - openRec.p[LEAGUE],
+      scored: members.filter((x) => x.lastAt && x.lastAt >= s0).map((x) => x.uid),
+    } : { s: s0, pts: null, scored: members.filter((x) => x.lastAt && x.lastAt >= s0).map((x) => x.uid) };
     p4out = {
-      ...me, icon: p4.icon, reward: p4.reward, members, turkeys: teamTurkeys, checkedTurkey: checkS, pack: packOut, projRanks,
+      ...me, thisTurkey, icon: p4.icon, reward: p4.reward, members, turkeys: teamTurkeys, checkedTurkey: checkS, pack: packOut, projRanks,
       gaps: Object.fromEntries(marks.filter((x) => [10, 25, 100].includes(x.r)).map((x) => [x.r, x.p - p4.points])),
       need100: c100 && turkeysLeft ? round((c100.proj - p4.points) / turkeysLeft) : null,
     };
@@ -364,6 +400,7 @@ export async function main() {
     top20: rows.slice(0, 20).map(enrich),
     dist: { last: dist(1), h1: dist(3) },
     series, catches, log: hist.log.slice(0, 12),
+    ref: cycles.length ? { boundary: lastS, takenAt: cycles[cycles.length - 1].t, lastTurkeyAt: cycles.length > 1 ? lastS - CYCLE : null } : null,
   };
 
   hist.lastRun = now;
