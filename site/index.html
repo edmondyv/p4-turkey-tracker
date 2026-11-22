@@ -193,6 +193,10 @@ tr.cut td{border-top:2px dashed var(--caramel)}
 .cnt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
 .cnt div{background:var(--card2);border-radius:var(--r-chip);padding:7px 8px;text-align:center}
 .cnt b{display:block;font:600 18px var(--display)} .cnt small{font-size:11px;color:var(--mute);font-weight:600}
+.mv{display:inline-block;margin-left:5px;font:700 10.5px var(--text);padding:0 5px;border-radius:999px;vertical-align:1px}
+.mv.up{background:rgba(124,203,78,.16)} .mv.down{background:rgba(240,69,79,.16)} .mv.eq{color:var(--dim);background:var(--card2)}
+td.rk{white-space:nowrap}
+.rank .mv{font-size:13px;vertical-align:.9em;margin-left:6px;text-shadow:none;letter-spacing:0}
 /* chart + dist + side */
 .chart{grid-area:chart}.dist{grid-area:dist}.side{grid-area:side}
 svg text{font-family:var(--text);font-size:11px;fill:var(--dim)}
@@ -337,6 +341,7 @@ function petIcon(item, size) {
   const name = (varName(item.variant) ? varName(item.variant) + " " : "") + item.id;
   return `<span class="${cls}" style="--s:${size}px" title="${esc(name)}"><img src="${src}" alt="${esc(name)}" loading="lazy" decoding="async"></span>`;
 }
+const arrow = (n) => n == null ? "" : n > 0 ? `<span class="mv up" title="Places gained since this Turkey landed">▲${n}</span>` : n < 0 ? `<span class="mv down" title="Places lost since this Turkey landed">▼${-n}</span>` : `<span class="mv eq" title="Same place as when this Turkey landed">=</span>`;
 const leagueIcon = (icon) => icon ? `<img class="li" src="${IMG(icon)}" alt="" loading="lazy" decoding="async">` : "";
 
 /* ---------- alerts in the browser (server sends phone alerts separately) */
@@ -362,7 +367,7 @@ setInterval(tick, 1000); tick();
 function renderHero(d) {
   const p = d.p4, c100 = d.marks.find((m) => m.r === 100), c101 = d.marks.find((m) => m.r === 101);
   $("season").textContent = d.season.title || "League";
-  $("rank").innerHTML = "<sup>#</sup>" + (p.r ?? "–");
+  $("rank").innerHTML = "<sup>#</sup>" + (p.r ?? "–") + arrow(p.dr);
   $("pts").textContent = full(p.p) + " pts";
   const inTop = p.r <= 100;
   if (c100) {
@@ -441,7 +446,8 @@ function renderPace(d) {
   const lt = d.ref && d.ref.lastTurkeyAt;
   const lbl = lt ? `${hm(lt)} Turkey` : "Last Turkey";
   const pl = $("paceRows").querySelector(".prow .lab"); if (pl) pl.textContent = lt ? hm(lt) + " Turkey" : "Last Turkey";
-  $("rivNote").textContent = lt ? `Last = ${lbl}` : "Points per Turkey"; $("topNote").textContent = lbl;
+  const rs = d.ref && d.ref.rankSince;
+  $("rivNote").textContent = (lt ? `Last = ${lbl}` : "Points per Turkey") + (rs ? `, arrows since ${hm(rs)}` : ""); $("topNote").textContent = lbl;
   const tt = p.thisTurkey || {};
   const pairsIn = PAIRS.filter((pr) => pr.some((u) => (tt.scored || []).includes(u))).length;
   $("thisT").textContent = tt.pts == null ? "–" : "+" + k(tt.pts);
@@ -451,12 +457,11 @@ function renderPace(d) {
 }
 
 function renderTables(d) {
-  const arrow = (n) => n == null || n === 0 ? "" : n > 0 ? `<span class="up">▲${n}</span>` : `<span class="down">▼${-n}</span>`;
   $("rivalsBody").innerHTML = d.rivals.map((r) => {
     const eta = r.me ? "" : r.eta == null ? '<span class="dim">–</span>' : r.gap > 0 ? `<span class="pill g" title="We pass them in ${r.eta} Turkeys">+1 in ${r.eta}</span>` : `<span class="pill r" title="They pass us in ${r.eta} Turkeys">−1 in ${r.eta}</span>`;
-    return `<tr class="${r.me ? "me" : ""}${r.r === 101 ? " cut" : ""}"><td class="num">${r.r} <small>${arrow(r.dr1h)}</small></td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.gap > 0 ? "down" : r.gap < 0 ? "up" : ""}">${r.me ? "" : sgn(r.gap)}</td><td class="r num ${r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}">${k(r.last)}</td><td class="r num hide-s">${k(r.h1)}</td><td class="r">${eta}</td></tr>`;
+    return `<tr class="${r.me ? "me" : ""}${r.r === 101 ? " cut" : ""}"><td class="num rk">${r.r}${arrow(r.dr)}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.gap > 0 ? "down" : r.gap < 0 ? "up" : ""}">${r.me ? "" : sgn(r.gap)}</td><td class="r num ${r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}">${k(r.last)}</td><td class="r num hide-s">${k(r.h1)}</td><td class="r">${eta}</td></tr>`;
   }).join("");
-  $("topBody").innerHTML = d.top20.map((r) => `<tr><td class="num">${r.r}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}">${k(r.last)}</td><td class="r num hide-s">${k(r.h1)}</td></tr>`).join("");
+  $("topBody").innerHTML = d.top20.map((r) => `<tr><td class="num rk">${r.r}${arrow(r.dr)}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}">${k(r.last)}</td><td class="r num hide-s">${k(r.h1)}</td></tr>`).join("");
 }
 
 function svgEl(w, h, inner, label) { return `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="${esc(label)}">${inner}</svg>`; }

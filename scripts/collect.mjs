@@ -223,8 +223,13 @@ export async function main() {
     return c ? rankMap(c.p) : null;
   };
   const r1h = rankAgo(3), r6h = rankAgo(18);
+  // rank change since the current Turkey landed (in its first 5 minutes: since the previous landing)
+  const refS = now - s0 >= 300 ? s0 : s0 - CYCLE;
+  const refRec = cycles.find((c) => c.s === refS);
+  const rRef = refRec ? rankMap(refRec.p) : null;
   const enrich = (row) => ({
     ...row, ...teamStats(row.n, row.p),
+    dr: rRef && rRef[row.n] ? rRef[row.n] - row.r : null,
     dr1h: r1h && r1h[row.n] ? r1h[row.n] - row.r : null,
     dr6h: r6h && r6h[row.n] ? r6h[row.n] - row.r : null,
   });
@@ -407,7 +412,7 @@ export async function main() {
     top20: rows.slice(0, 20).map(enrich),
     dist: { last: dist(1), h1: dist(3), aheadLast: dist(1, ahead), aheadH1: dist(3, ahead), aheadN: ahead.length },
     series, catches, log: hist.log.slice(0, 12),
-    ref: cycles.length ? { boundary: lastS, takenAt: cycles[cycles.length - 1].t, lastTurkeyAt: cycles.length > 1 ? lastS - CYCLE : null } : null,
+    ref: cycles.length ? { boundary: lastS, takenAt: cycles[cycles.length - 1].t, lastTurkeyAt: cycles.length > 1 ? lastS - CYCLE : null, rankSince: refRec ? refS : null } : null,
   };
 
   hist.lastRun = now;
