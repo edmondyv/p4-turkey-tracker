@@ -109,7 +109,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 .band b{font:600 13px var(--display)} .band small{font-size:11px;color:var(--mute);font-weight:600;line-height:1.2}
 .band.cur{border-color:var(--caramel);background:#2a1820}
 .band.cur b{color:var(--caramel2)}
-.band.goal{border-color:var(--lilac);border-style:dashed}
 .ava{position:relative;width:36px;height:36px;flex:none}
 .ava img{width:36px;height:36px;border-radius:50%;background:var(--card);display:block;font-size:0;color:transparent;overflow:hidden}
 .ava .st{position:absolute;right:-2px;bottom:-2px;width:13px;height:13px;border:2.5px solid var(--card2)}
@@ -197,6 +196,17 @@ tr.cut td{border-top:2px dashed var(--caramel)}
 .mv.up{background:rgba(124,203,78,.16)} .mv.down{background:rgba(240,69,79,.16)} .mv.eq{color:var(--dim);background:var(--card2)}
 td.rk{white-space:nowrap}
 .rank .mv{font-size:13px;vertical-align:.9em;margin-left:6px;text-shadow:none;letter-spacing:0}
+.pt{font-size:13px}
+.pt th{padding:0 6px 6px}.pt td{padding:7px 6px}
+.pt td.lab{color:var(--mute);font-weight:600}
+.pt th.me{color:var(--caramel2)}
+.pt td.me{font:600 16px var(--display);color:var(--ink)}
+.pt td.me span{display:inline-block;min-width:52px;text-align:right;padding:1px 7px;border-radius:8px}
+.pt td.me .win{background:rgba(124,203,78,.18);color:#bff09c} .pt td.me .lose{background:rgba(240,69,79,.18);color:#ffb1b6}
+.pt td.o{color:var(--mute);font-weight:600}
+.ptkey{display:flex;gap:6px;align-items:center;font-size:11.5px;color:var(--dim);margin-top:4px}
+.ptkey .k{padding:0 6px;border-radius:6px;font-weight:700}
+.ptkey .win{background:rgba(124,203,78,.18);color:#bff09c} .ptkey .lose{background:rgba(240,69,79,.18);color:#ffb1b6}
 /* chart + dist + side */
 .chart{grid-area:chart}.dist{grid-area:dist}.side{grid-area:side}
 svg text{font-family:var(--text);font-size:11px;fill:var(--dim)}
@@ -270,8 +280,8 @@ footer a{color:var(--mute)}
 
     <section class="card pace" aria-label="Pace">
       <header><h2>Pace per Turkey</h2><span class="mute">Points per Turkey</span></header>
-      <div class="legend"><span><i style="background:var(--caramel)"></i>P4</span><span><i style="background:var(--lilac)"></i>#100</span><span><i style="background:#5cc8e0"></i><span id="packLbl">20 teams ahead</span></span></div>
-      <div id="paceRows"></div>
+      <table class="pt"><thead><tr><th></th><th class="r me">P4</th><th class="r" id="packLbl" title="Median of the 20 teams just above us">20 ahead</th><th class="r">#100</th></tr></thead><tbody id="paceRows"></tbody></table>
+      <div class="ptkey"><span class="k win">faster</span><span class="k lose">slower</span>than the 20 teams just ahead</div>
       <div class="packline" id="packLine"></div>
       <div class="proj p3">
         <div><b class="num" id="pr3">–</b><small>Rank in 3 h</small></div>
@@ -382,9 +392,10 @@ function renderHero(d) {
   $("prize").innerHTML = items ? `${petIcon(items, 54)}<div><b>${esc((varName(items.variant) ? varName(items.variant) + " " : "") + items.id)}</b><small>Our reward at #${p.r ?? "–"} (places ${esc(p.reward.placement || "")})</small></div>` : `<div><b>No reward yet</b><small>Score points to get on the board</small></div>`;
   // reward ladder
   const bands = (d.season.bands || []).filter((b) => b.items && b.items[0]);
-  const goal = bands.find((b) => b.worst === 100);
-  $("ladder").innerHTML = bands.map((b) => { const cur = p.r >= b.best && p.r <= b.worst; const isGoal = !cur && goal === b && p.r > 100;
-    const it = b.items[0]; return `<div class="band ${cur ? "cur" : ""} ${isGoal ? "goal" : ""}">${petIcon(it, 46)}<b>${esc(b.placement)}</b><small>${esc((varName(it.variant) ? varName(it.variant) + " " : "") + it.id.replace(/^(Gargantuan|Titanic|Huge) /, "$1\u00a0"))}${cur ? "<br><span class='gold'>We're here</span>" : isGoal ? "<br><span style='color:var(--lilac)'>Our goal</span>" : ""}</small></div>`; }).join("");
+  $("ladder").innerHTML = bands.map((b) => { const cur = p.r >= b.best && p.r <= b.worst; const it = b.items[0];
+    const m = it.id.match(/^(Gargantuan|Titanic|Huge) (.+)$/), tier = m ? m[1] : "", rest = m ? m[2] : it.id;
+    const top = [varName(it.variant), tier].filter(Boolean).join(" ");
+    return `<div class="band ${cur ? "cur" : ""}">${petIcon(it, 46)}<b>${esc(b.placement)}</b><small>${top ? esc(top) + "<br>" : ""}${esc(rest)}${cur ? "<br><span class='gold'>We're here</span>" : ""}</small></div>`; }).join("");
   // race track
   const tr = $("track"), pts = d.track.map((t) => t.p).concat(c100 ? [c100.p] : []), lo = Math.min(...pts), hi = Math.max(...pts), pad = (hi - lo) * .04 || 1;
   const x = (v) => ((v - lo + pad) / (hi - lo + 2 * pad)) * 100;
@@ -428,9 +439,10 @@ function renderSquad(d) {
 function renderPace(d) {
   const p = d.p4, c = d.marks.find((m) => m.r === 100) || {}, pk = p.pack || {};
   const rows = [["Last Turkey", p.last, c.last, pk.last], ["Last hour", p.h1, c.h1, pk.h1], ["Last 6 h", p.h6, c.h6, pk.h6], ["Since start", p.since, c.since, pk.since]];
-  const mx = Math.max(2000, ...rows.flatMap((r) => [r[1] || 0, r[2] || 0, r[3] || 0]));
-  $("paceRows").innerHTML = rows.map(([l, a, b, e]) => { const ref = Math.max(b ?? -1, e ?? -1); return `<div class="prow"><span class="lab">${l}</span><div class="pb" title="P4 ${k(a)}, #100 ${k(b)}, median of the 20 ahead ${k(e)}"><i class="a" style="width:${(a || 0) / mx * 100}%"></i><i class="b" style="width:${(b || 0) / mx * 100}%"></i><i class="c" style="width:${(e || 0) / mx * 100}%"></i></div><span class="v num ${a != null && ref >= 0 ? (a >= ref ? "up" : "down") : ""}">${k(a)}</span></div>`; }).join("");
-  if (pk.n) { $("packLbl").textContent = `#${pk.from}–${p.r - 1} (median)`; $("packLine").innerHTML = `Faster than <b>${pk.slower} of the ${pk.n}</b> teams just ahead over the last hour.`; }
+  $("paceRows").innerHTML = rows.map(([l, a, b, e]) => {
+    const cls = a == null || e == null ? "" : a > e + 50 ? "win" : a < e - 50 ? "lose" : "";
+    return `<tr><td class="lab">${l}</td><td class="r me num"><span class="${cls}">${k(a)}</span></td><td class="r o num">${k(e)}</td><td class="r o num">${k(b)}</td></tr>`; }).join("");
+  if (pk.n) { $("packLbl").textContent = `#${pk.from}–${p.r - 1}`; $("packLine").innerHTML = `Over the last hour we're faster than <b>${pk.slower} of the ${pk.n}</b> teams just ahead.`; }
   const pr = p.projRanks || {}; const rk = (r) => r == null ? "–" : "#" + r;
   $("pr3").textContent = rk(pr.h3); $("pr12").textContent = rk(pr.h12); $("prF").textContent = rk(pr.finish);
   [["pr3", pr.h3], ["pr12", pr.h12], ["prF", pr.finish]].forEach(([id, r]) => { $(id).className = "num " + (r == null ? "" : r <= 100 ? "up" : r < p.r ? "gold" : r > p.r ? "down" : ""); });
@@ -445,7 +457,7 @@ function renderPace(d) {
   }
   const lt = d.ref && d.ref.lastTurkeyAt;
   const lbl = lt ? `${hm(lt)} Turkey` : "Last Turkey";
-  const pl = $("paceRows").querySelector(".prow .lab"); if (pl) pl.textContent = lt ? hm(lt) + " Turkey" : "Last Turkey";
+  const pl = $("paceRows").querySelector("td.lab"); if (pl) pl.textContent = lt ? hm(lt) + " Turkey" : "Last Turkey";
   const rs = d.ref && d.ref.rankSince;
   $("rivNote").textContent = (lt ? `Last = ${lbl}` : "Points per Turkey") + (rs ? `, arrows since ${hm(rs)}` : ""); $("topNote").textContent = lbl;
   const tt = p.thisTurkey || {};
