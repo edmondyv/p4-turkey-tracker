@@ -227,8 +227,21 @@ export async function main() {
       return { uid, name: SQUAD[uid], display: c.display || c.name, points: c.points, lastAt: c.lastAt, streak, h1: round(pace(`m:${uid}`, 3)), turkeys };
     });
     const teamTurkeys = cycles.slice(-13).map((cy, i, arr) => (i === 0 ? null : { s: arr[i - 1].s, pts: diff(cy.p[LEAGUE], arr[i - 1].p[LEAGUE]) })).slice(1);
+    // the 20 teams just ahead: median pace (robust to solo-killing outliers), how many we outpace,
+    // and our projected rank if every top-300 team keeps its own 6-hour pace
+    const myR0 = p4.place || 999;
+    const pack = rows.filter((r) => r.r >= myR0 - 20 && r.r < myR0 && r.n !== LEAGUE);
+    const sinceOf = (r) => r.p / turkeysElapsed;
+    const med = (k) => round(quant(pack.map((r) => pace(r.n, k)).filter((v) => v != null), 0.5));
+    const myNow = me.h1 ?? me.h6 ?? me.since;
+    const packNow = pack.map((r) => pace(r.n, 3) ?? sinceOf(r));
+    const myLong = pace(LEAGUE, 18) ?? pace(LEAGUE, 3) ?? p4.points / turkeysElapsed;
+    const projRank = (k) => 1 + rows.filter((r) => r.n !== LEAGUE && r.p + (pace(r.n, 18) ?? pace(r.n, 3) ?? sinceOf(r)) * k > p4.points + myLong * k).length;
+    const packOut = { n: pack.length, from: myR0 - pack.length, last: med(1), h1: med(3), h6: med(18), since: round(quant(pack.map(sinceOf), 0.5)),
+      slower: packNow.filter((v) => v < myNow).length };
+    const projRanks = { h3: projRank(9), h12: projRank(36), finish: projRank(turkeysLeft) };
     p4out = {
-      ...me, icon: p4.icon, reward: p4.reward, members, turkeys: teamTurkeys, checkedTurkey: checkS,
+      ...me, icon: p4.icon, reward: p4.reward, members, turkeys: teamTurkeys, checkedTurkey: checkS, pack: packOut, projRanks,
       gaps: Object.fromEntries(marks.filter((x) => [10, 25, 100].includes(x.r)).map((x) => [x.r, x.p - p4.points])),
       need100: c100 && turkeysLeft ? round((c100.proj - p4.points) / turkeysLeft) : null,
     };

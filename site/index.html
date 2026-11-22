@@ -93,7 +93,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 /* pets and icons */
 .pet{position:relative;display:inline-grid;place-items:center;width:var(--s);height:var(--s);flex:none;border-radius:calc(var(--s) * .26);background:var(--deep);padding:2px;box-shadow:0 3px 0 var(--deep)}
-.pet img{width:100%;height:100%;display:block;object-fit:cover;border-radius:calc(var(--s) * .22)}
+.pet img{width:100%;height:100%;display:block;object-fit:cover;border-radius:calc(var(--s) * .22);font-size:0;color:transparent;overflow:hidden}
 .pet.rb{background:conic-gradient(from var(--a,0deg),#ff6b6b,#ffd166,#7ccb4e,#5cc8ff,#b58fd6,#ff6b6b);animation:spin 3s linear infinite}
 .pet.rb img{animation:hue 5s linear infinite}
 .pet.gd{background:linear-gradient(135deg,#fff2c2,#f6a93b 45%,#b36b10)}
@@ -102,7 +102,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   background:radial-gradient(circle at 22% 25%,#fff 0 1.5px,transparent 2.5px),radial-gradient(circle at 78% 30%,#fff 0 1.2px,transparent 2.2px),radial-gradient(circle at 60% 80%,#fff 0 1.5px,transparent 2.5px);animation:twinkle 1.6s ease-in-out infinite}
 @property --a{syntax:"<angle>";initial-value:0deg;inherits:false}
 @keyframes spin{to{--a:360deg}} @keyframes hue{to{filter:hue-rotate(360deg)}} @keyframes twinkle{50%{opacity:.25}}
-.li{width:20px;height:20px;border-radius:6px;vertical-align:-5px;margin-right:7px;background:var(--deep);object-fit:cover}
+.li{width:20px;height:20px;border-radius:6px;vertical-align:-5px;margin-right:7px;background:var(--deep);object-fit:cover;font-size:0;color:transparent;overflow:hidden}
 .ladder{display:flex;gap:8px;margin-top:14px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
 .ladder::-webkit-scrollbar{display:none}
 .band{flex:1 0 92px;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--deep);border:2px solid transparent;border-radius:16px;padding:9px 6px 7px;text-align:center;min-width:92px}
@@ -111,7 +111,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .band.cur b{color:var(--caramel2)}
 .band.goal{border-color:var(--lilac);border-style:dashed}
 .ava{position:relative;width:36px;height:36px;flex:none}
-.ava img{width:36px;height:36px;border-radius:50%;background:var(--card);display:block}
+.ava img{width:36px;height:36px;border-radius:50%;background:var(--card);display:block;font-size:0;color:transparent;overflow:hidden}
 .ava .st{position:absolute;right:-2px;bottom:-2px;width:13px;height:13px;border:2.5px solid var(--card2)}
 /* squad */
 .squad{grid-area:squad}
@@ -156,13 +156,16 @@ button{font:inherit;color:inherit;cursor:pointer}
 .pace{grid-area:pace}
 .prow{display:grid;grid-template-columns:86px minmax(0,1fr) 56px;gap:8px;align-items:center;font-size:13px;padding:5px 0}
 .prow .lab{color:var(--mute);font-weight:600}
-.pb{position:relative;height:18px}
+.pb{position:relative;height:24px}
 .pb i{position:absolute;left:0;height:7px;border-radius:4px;transition:width .8s}
-.pb i.a{top:1px;background:var(--caramel)} .pb i.b{top:10px;background:var(--lilac);opacity:.75}
+.pb i.a{top:1px;background:var(--caramel)} .pb i.b{top:9px;background:var(--lilac);opacity:.8} .pb i.c{top:17px;background:#5cc8e0;opacity:.8}
 .prow .v{text-align:right;font:600 15px var(--display)}
 .legend{display:flex;gap:12px;font-size:12px;color:var(--mute);margin:2px 0 6px}
 .legend i{display:inline-block;width:10px;height:6px;border-radius:3px;margin-right:5px;vertical-align:1px}
-.proj{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.proj{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.proj.p3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.packline{font-size:12.5px;color:var(--mute);margin-top:6px}
+.packline b{color:var(--ink)}
 .proj div{background:var(--card2);border-radius:var(--r-chip);padding:8px 10px}
 .proj b{font:600 20px var(--display);display:block}
 .proj small{color:var(--mute);font-size:11.5px;font-weight:600}
@@ -256,9 +259,15 @@ footer a{color:var(--mute)}
     </section>
 
     <section class="card pace" aria-label="Pace">
-      <header><h2>Pace per Turkey</h2><span class="mute">P4 vs #100</span></header>
-      <div class="legend"><span><i style="background:var(--caramel)"></i>P4</span><span><i style="background:var(--lilac)"></i>#100</span></div>
+      <header><h2>Pace per Turkey</h2><span class="mute">Points per Turkey</span></header>
+      <div class="legend"><span><i style="background:var(--caramel)"></i>P4</span><span><i style="background:var(--lilac)"></i>#100</span><span><i style="background:#5cc8e0"></i><span id="packLbl">20 teams ahead</span></span></div>
       <div id="paceRows"></div>
+      <div class="packline" id="packLine"></div>
+      <div class="proj p3">
+        <div><b class="num" id="pr3">–</b><small>Rank in 3 h</small></div>
+        <div><b class="num" id="pr12">–</b><small>Rank in 12 h</small></div>
+        <div><b class="num" id="prF">–</b><small>Rank at the finish</small></div>
+      </div>
       <div class="proj">
         <div><b class="num" id="projMe">–</b><small>P4 at the finish</small></div>
         <div><b class="num" id="proj100">–</b><small>#100 at the finish</small></div>
@@ -406,10 +415,14 @@ function renderSquad(d) {
 }
 
 function renderPace(d) {
-  const p = d.p4, c = d.marks.find((m) => m.r === 100) || {};
-  const rows = [["Last Turkey", p.last, c.last], ["Last hour", p.h1, c.h1], ["Last 6 h", p.h6, c.h6], ["Since start", p.since, c.since]];
-  const mx = Math.max(2000, ...rows.flatMap((r) => [r[1] || 0, r[2] || 0]));
-  $("paceRows").innerHTML = rows.map(([l, a, b]) => `<div class="prow"><span class="lab">${l}</span><div class="pb"><i class="a" style="width:${(a || 0) / mx * 100}%"></i><i class="b" style="width:${(b || 0) / mx * 100}%"></i></div><span class="v num ${a != null && b != null ? (a >= b ? "up" : "down") : ""}">${k(a)}</span></div>`).join("");
+  const p = d.p4, c = d.marks.find((m) => m.r === 100) || {}, pk = p.pack || {};
+  const rows = [["Last Turkey", p.last, c.last, pk.last], ["Last hour", p.h1, c.h1, pk.h1], ["Last 6 h", p.h6, c.h6, pk.h6], ["Since start", p.since, c.since, pk.since]];
+  const mx = Math.max(2000, ...rows.flatMap((r) => [r[1] || 0, r[2] || 0, r[3] || 0]));
+  $("paceRows").innerHTML = rows.map(([l, a, b, e]) => { const ref = Math.max(b ?? -1, e ?? -1); return `<div class="prow"><span class="lab">${l}</span><div class="pb" title="P4 ${k(a)}, #100 ${k(b)}, median of the 20 ahead ${k(e)}"><i class="a" style="width:${(a || 0) / mx * 100}%"></i><i class="b" style="width:${(b || 0) / mx * 100}%"></i><i class="c" style="width:${(e || 0) / mx * 100}%"></i></div><span class="v num ${a != null && ref >= 0 ? (a >= ref ? "up" : "down") : ""}">${k(a)}</span></div>`; }).join("");
+  if (pk.n) { $("packLbl").textContent = `#${pk.from}–${p.r - 1} (median)`; $("packLine").innerHTML = `Faster than <b>${pk.slower} of the ${pk.n}</b> teams just ahead over the last hour.`; }
+  const pr = p.projRanks || {}; const rk = (r) => r == null ? "–" : "#" + r;
+  $("pr3").textContent = rk(pr.h3); $("pr12").textContent = rk(pr.h12); $("prF").textContent = rk(pr.finish);
+  [["pr3", pr.h3], ["pr12", pr.h12], ["prF", pr.finish]].forEach(([id, r]) => { $(id).className = "num " + (r == null ? "" : r <= 100 ? "up" : r < p.r ? "gold" : r > p.r ? "down" : ""); });
   $("projMe").textContent = k(p.proj); $("proj100").textContent = k(c.proj);
   const v = $("verdict");
   if (p.need100 == null) { v.className = "verdict meh"; v.textContent = "Projection needs a few Turkeys of history."; }
