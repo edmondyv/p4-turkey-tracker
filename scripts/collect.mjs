@@ -363,8 +363,10 @@ export async function main() {
   const dist = (k, group = top100) => {
     const vals = group.map((r) => pace(r.n, k)).filter((v) => v != null);
     if (!vals.length) return null;
+    // bars centred on round values: the "2k" bar holds 1,750-2,249, the last bar everything from 3,750
     const bins = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000];
-    const hist = bins.map((b, i) => vals.filter((v) => v >= b && (i === bins.length - 1 || v < bins[i + 1])).length);
+    const binOf = (v) => Math.max(0, Math.min(bins.length - 1, Math.round(v / 500)));
+    const hist = bins.map((_, i) => vals.filter((v) => binOf(v) === i).length);
     const me = myPaceK(k);
     return {
       n: vals.length, mean: round(mean(vals)), median: round(quant(vals, 0.5)), q1: round(quant(vals, 0.25)), q3: round(quant(vals, 0.75)),

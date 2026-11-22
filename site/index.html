@@ -487,7 +487,7 @@ function renderDist(d) {
   $("distTitle").textContent = ahead ? `How the ${ds.aheadN || ""} teams ahead score` : "How the top 100 scores";
   if (!h) { $("distBox").innerHTML = '<div class="empty">Needs a couple of Turkeys of data.</div>'; return; }
   const W = 360, H = 200, L = 6, B = 24, bw = (W - 2 * L) / h.hist.length, mx = Math.max(...h.hist, 1);
-  const me = h.me, myBin = me == null ? -1 : Math.min(h.bins.length - 1, Math.floor(me / 500));
+  const me = h.me, myBin = me == null ? -1 : Math.max(0, Math.min(h.bins.length - 1, Math.round(me / 500)));
   let g = h.hist.map((n, i) => { const bh = (H - B - 40) * n / mx; const mine = i === myBin;
     return `<rect x="${L + i * bw + 3}" y="${H - B - bh}" width="${bw - 6}" height="${Math.max(bh, 2)}" rx="5" fill="${mine ? "#7ccb4e" : h.bins[i] >= 2500 ? "#f6a93b" : h.bins[i] >= 2000 ? "#b58fd6" : "#4b2c58"}" ${mine ? 'stroke="#d8ffbf" stroke-width="2"' : ""}/>`
       + (n ? `<text x="${L + i * bw + bw / 2}" y="${H - B - bh - 4}" text-anchor="middle" style="fill:${mine ? "#d8ffbf" : "#c8a6c8"};font-weight:700">${n}</text>` : "")
@@ -495,7 +495,7 @@ function renderDist(d) {
       + (mine ? `<rect x="${L + i * bw + bw / 2 - 17}" y="2" width="34" height="18" rx="9" fill="#7ccb4e"/><text x="${L + i * bw + bw / 2}" y="15" text-anchor="middle" style="fill:#13091a;font-weight:800">P4</text><line x1="${L + i * bw + bw / 2}" x2="${L + i * bw + bw / 2}" y1="20" y2="${H - B - bh - 16}" stroke="#7ccb4e" stroke-width="2" stroke-dasharray="3 3"/>` : ""); }).join("");
   $("distBox").innerHTML = svgEl(W, H, g, "Points per Turkey distribution with P4's position") +
     (me != null ? `<div class="cnt"><div><b class="num up">${h.less}</b><small>score less</small></div><div><b class="num">${h.same}</b><small>same (${k(me)})</small></div><div><b class="num down">${h.more}</b><small>score more</small></div></div>` : "") +
-    `<div class="mute" style="font-size:12px;margin-top:6px">Points per Turkey, ${win}. ${ahead ? `Teams ranked #1 to #${(d.p4.r || 1) - 1}` : "Top 100"}: median ${k(h.median)}.</div>`;
+    `<div class="mute" style="font-size:12px;margin-top:6px">Points per Turkey, ${win}. Each bar is ±250 around its label (2k = 1,750 to 2,249). ${ahead ? `Teams #1 to #${(d.p4.r || 1) - 1}` : "Top 100"}, median ${k(h.median)}.</div>`;
 }
 $("dsAhead").onclick = () => { distMode = "ahead"; $("dsAhead").setAttribute("aria-pressed", "true"); $("dsTop").setAttribute("aria-pressed", "false"); if (D) renderDist(D); };
 $("dsTop").onclick = () => { distMode = "top"; $("dsTop").setAttribute("aria-pressed", "true"); $("dsAhead").setAttribute("aria-pressed", "false"); if (D) renderDist(D); };
