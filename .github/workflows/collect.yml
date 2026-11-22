@@ -1,0 +1,48 @@
+name: collect
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load previous data
+        run: |
+          mkdir -p out
+          if git fetch --depth=1 origin data 2>/dev/null; then
+            git show origin/data:history.json > out/history.json 2>/dev/null || true
+          fi
+
+      - name: Collect
+        run: node scripts/collect.mjs
+        env:
+          DATA_DIR: out
+          LEAGUE_NAME: P4
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+
+      - name: Publish to the data branch (single commit, force-pushed)
+        working-directory: out
+        run: |
+          [ -f dashboard.json ] || exit 0
+          git init -q -b data
+          git config user.name "p4-collector"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add history.json dashboard.json
+          git commit -q -m "data $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
