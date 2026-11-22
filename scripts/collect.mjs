@@ -356,16 +356,21 @@ export async function main() {
     hist.log = hist.log.slice(0, 30);
   }
 
-  // ---------- top 100 pace distribution (last Turkey and last hour)
+  // ---------- pace distributions (points per Turkey): the top 100, and every team ranked above P4
   const top100 = rows.filter((r) => r.r <= 100);
-  const dist = (k) => {
-    const vals = top100.map((r) => pace(r.n, k)).filter((v) => v != null);
+  const ahead = p4 && p4.place ? rows.filter((r) => r.r < p4.place) : [];
+  const myPaceK = (k) => (p4 ? pace(LEAGUE, k) : null);
+  const dist = (k, group = top100) => {
+    const vals = group.map((r) => pace(r.n, k)).filter((v) => v != null);
     if (!vals.length) return null;
     const bins = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000];
     const hist = bins.map((b, i) => vals.filter((v) => v >= b && (i === bins.length - 1 || v < bins[i + 1])).length);
+    const me = myPaceK(k);
     return {
       n: vals.length, mean: round(mean(vals)), median: round(quant(vals, 0.5)), q1: round(quant(vals, 0.25)), q3: round(quant(vals, 0.75)),
       at2k: vals.filter((v) => v >= 1950 && v <= 2050).length, above2k: vals.filter((v) => v > 2050).length, bins, hist,
+      me: round(me), less: me == null ? null : vals.filter((v) => v < me - 50).length,
+      same: me == null ? null : vals.filter((v) => Math.abs(v - me) <= 50).length, more: me == null ? null : vals.filter((v) => v > me + 50).length,
     };
   };
 
@@ -398,7 +403,7 @@ export async function main() {
     season: { id: season.id, title: season.title, state: season.state, start: startTime, finish: season.finishTime, turkeysElapsed, turkeysLeft, totalLeagues, bands: season.placementRewards || [], petIcons: hist.petIcons || {} },
     p4: p4out, marks, rivals, track,
     top20: rows.slice(0, 20).map(enrich),
-    dist: { last: dist(1), h1: dist(3) },
+    dist: { last: dist(1), h1: dist(3), aheadLast: dist(1, ahead), aheadH1: dist(3, ahead), aheadN: ahead.length },
     series, catches, log: hist.log.slice(0, 12),
     ref: cycles.length ? { boundary: lastS, takenAt: cycles[cycles.length - 1].t, lastTurkeyAt: cycles.length > 1 ? lastS - CYCLE : null } : null,
   };

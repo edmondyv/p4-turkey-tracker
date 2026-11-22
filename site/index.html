@@ -58,7 +58,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 @media (max-width:680px){.grid{grid-template-columns:minmax(0,1fr);
   grid-template-areas:"hero" "squad" "clock" "pace" "rivals" "chart" "top" "dist" "side"}}
 .card{background:var(--card);border:2px solid var(--line);border-radius:var(--r-card);padding:14px;box-shadow:0 5px 0 var(--deep);min-width:0}
-.card>header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px}
+.card>header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 8px;margin-bottom:10px}
 .card>header .mute{font-size:12px;font-weight:600}
 
 /* hero */
@@ -187,6 +187,12 @@ tr.cut td{border-top:2px dashed var(--caramel)}
 .pill.g{color:var(--leaf)} .pill.r{color:#ff8d94}
 @media (max-width:680px){.hide-s{display:none}}
 
+.seg{display:inline-flex;background:var(--deep);border-radius:999px;padding:3px;gap:2px}
+.seg button{border:0;background:none;border-radius:999px;padding:4px 10px;white-space:nowrap;font:700 12px var(--text);color:var(--mute)}
+.seg button[aria-pressed=true]{background:var(--card2);color:var(--ink)}
+.cnt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
+.cnt div{background:var(--card2);border-radius:var(--r-chip);padding:7px 8px;text-align:center}
+.cnt b{display:block;font:600 18px var(--display)} .cnt small{font-size:11px;color:var(--mute);font-weight:600}
 /* chart + dist + side */
 .chart{grid-area:chart}.dist{grid-area:dist}.side{grid-area:side}
 svg text{font-family:var(--text);font-size:11px;fill:var(--dim)}
@@ -291,7 +297,7 @@ footer a{color:var(--mute)}
     </section>
 
     <section class="card dist" aria-label="How fast the top 100 scores">
-      <header><h2>How the top 100 scores</h2><span class="mute">Last hour</span></header>
+      <header><h2 id="distTitle">How the teams ahead score</h2><span class="seg" role="group" aria-label="Which teams"><button id="dsAhead" aria-pressed="true">Ahead of us</button><button id="dsTop" aria-pressed="false">Top 100</button></span></header>
       <div id="distBox"></div>
     </section>
 
@@ -473,18 +479,26 @@ function renderChart(d) {
   $("chartNote").textContent = last >= 0 ? `${full(last)} above it` : `${full(-last)} below it`;
 }
 
+let distMode = "ahead";
 function renderDist(d) {
-  const h = d.dist && (d.dist.h1 || d.dist.last);
-  if (!h) { $("distBox").innerHTML = '<div class="empty">Needs an hour of data.</div>'; return; }
-  const W = 360, H = 190, L = 6, B = 24, bw = (W - 2 * L) / h.hist.length, mx = Math.max(...h.hist, 1);
-  const me = d.p4.h1, c100 = (d.marks.find((m) => m.r === 100) || {}).h1;
-  const bx = (v) => v == null ? null : L + Math.min(h.bins.length - .01, v / 500) * bw;
-  let g = h.hist.map((n, i) => { const bh = (H - B - 34) * n / mx; return `<rect x="${L + i * bw + 3}" y="${H - B - bh}" width="${bw - 6}" height="${Math.max(bh, 2)}" rx="5" fill="${h.bins[i] >= 2500 ? "#f6a93b" : h.bins[i] >= 2000 ? "#b58fd6" : "#4b2c58"}"/>${n ? `<text x="${L + i * bw + bw / 2}" y="${H - B - bh - 4}" text-anchor="middle" style="fill:#c8a6c8">${n}</text>` : ""}<text x="${L + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${h.bins[i] / 1000}k${i === h.bins.length - 1 ? "+" : ""}</text>`; }).join("");
-  if (me != null) g += `<line x1="${bx(me)}" x2="${bx(me)}" y1="18" y2="${H - B}" stroke="#ffd08a" stroke-width="2.5" stroke-dasharray="4 3"/><rect x="${bx(me) - 14}" y="0" width="28" height="16" rx="8" fill="#ffd08a"/><text x="${bx(me)}" y="12" text-anchor="middle" style="fill:#13091a;font-weight:800">P4</text>`;
-  $("distBox").innerHTML = svgEl(W, H, g, "Distribution of points per Turkey in the top 100") +
-    `<div class="mute" style="font-size:12.5px;margin-top:6px">Median <b class="num" style="color:var(--ink)">${k(h.median)}</b> per Turkey. ${h.above2k} of ${h.n} teams score more than 2k: they kill solo.${c100 != null ? ` #100 does ${k(c100)}.` : ""}</div>`;
+  const ds = d.dist || {}, ahead = distMode === "ahead";
+  const h = ahead ? (ds.aheadH1 || ds.aheadLast) : (ds.h1 || ds.last);
+  const win = ahead ? (ds.aheadH1 ? "last hour" : "last Turkey") : (ds.h1 ? "last hour" : "last Turkey");
+  $("distTitle").textContent = ahead ? `How the ${ds.aheadN || ""} teams ahead score` : "How the top 100 scores";
+  if (!h) { $("distBox").innerHTML = '<div class="empty">Needs a couple of Turkeys of data.</div>'; return; }
+  const W = 360, H = 200, L = 6, B = 24, bw = (W - 2 * L) / h.hist.length, mx = Math.max(...h.hist, 1);
+  const me = h.me, myBin = me == null ? -1 : Math.min(h.bins.length - 1, Math.floor(me / 500));
+  let g = h.hist.map((n, i) => { const bh = (H - B - 40) * n / mx; const mine = i === myBin;
+    return `<rect x="${L + i * bw + 3}" y="${H - B - bh}" width="${bw - 6}" height="${Math.max(bh, 2)}" rx="5" fill="${mine ? "#7ccb4e" : h.bins[i] >= 2500 ? "#f6a93b" : h.bins[i] >= 2000 ? "#b58fd6" : "#4b2c58"}" ${mine ? 'stroke="#d8ffbf" stroke-width="2"' : ""}/>`
+      + (n ? `<text x="${L + i * bw + bw / 2}" y="${H - B - bh - 4}" text-anchor="middle" style="fill:${mine ? "#d8ffbf" : "#c8a6c8"};font-weight:700">${n}</text>` : "")
+      + `<text x="${L + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${h.bins[i] / 1000}k${i === h.bins.length - 1 ? "+" : ""}</text>`
+      + (mine ? `<rect x="${L + i * bw + bw / 2 - 17}" y="2" width="34" height="18" rx="9" fill="#7ccb4e"/><text x="${L + i * bw + bw / 2}" y="15" text-anchor="middle" style="fill:#13091a;font-weight:800">P4</text><line x1="${L + i * bw + bw / 2}" x2="${L + i * bw + bw / 2}" y1="20" y2="${H - B - bh - 16}" stroke="#7ccb4e" stroke-width="2" stroke-dasharray="3 3"/>` : ""); }).join("");
+  $("distBox").innerHTML = svgEl(W, H, g, "Points per Turkey distribution with P4's position") +
+    (me != null ? `<div class="cnt"><div><b class="num up">${h.less}</b><small>score less</small></div><div><b class="num">${h.same}</b><small>same (${k(me)})</small></div><div><b class="num down">${h.more}</b><small>score more</small></div></div>` : "") +
+    `<div class="mute" style="font-size:12px;margin-top:6px">Points per Turkey, ${win}. ${ahead ? `Teams ranked #1 to #${(d.p4.r || 1) - 1}` : "Top 100"}: median ${k(h.median)}.</div>`;
 }
-
+$("dsAhead").onclick = () => { distMode = "ahead"; $("dsAhead").setAttribute("aria-pressed", "true"); $("dsTop").setAttribute("aria-pressed", "false"); if (D) renderDist(D); };
+$("dsTop").onclick = () => { distMode = "top"; $("dsTop").setAttribute("aria-pressed", "true"); $("dsAhead").setAttribute("aria-pressed", "false"); if (D) renderDist(D); };
 function renderSide(d) {
   const log = d.log || [];
   $("log").innerHTML = log.length ? log.slice(0, 4).map((e) => `<li><time>${hm(e.t)}</time><span class="${e.kind}">${esc(e.text)}</span></li>`).join("") : '<li><time></time><span class="mute">No alerts. Everyone scored on every Turkey so far.</span></li>';
