@@ -16,11 +16,13 @@
   --r-hero:28px; --r-card:20px; --r-chip:12px;
   --display:"Fredoka",ui-rounded,system-ui,sans-serif; --text:"Manrope",system-ui,sans-serif;
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+button,a{touch-action:manipulation}
+:focus:not(:focus-visible){outline:none}
 html{background:var(--night);color:var(--ink);font:500 14px/1.45 var(--text);-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100vh;background:
   radial-gradient(1200px 500px at 15% -10%,#3b1840 0%,transparent 60%),
-  radial-gradient(900px 400px at 110% 10%,#2a1140 0%,transparent 55%),var(--night)}
+  radial-gradient(900px 400px at 110% 10%,#2a1140 0%,transparent 55%),var(--night);background-attachment:fixed}
 .wrap{max-width:1320px;margin:0 auto;padding:14px clamp(10px,2.4vw,24px) 40px}
 h1,h2,h3{font-family:var(--display);font-weight:600;margin:0;letter-spacing:.005em}
 h2{font-size:16px;color:var(--ink)}
@@ -31,7 +33,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 :focus-visible{outline:3px solid var(--caramel2);outline-offset:2px;border-radius:8px}
 
 /* top bar */
-.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.bar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin:-14px calc(-1 * clamp(10px,2.4vw,24px)) -6px;padding:max(12px,env(safe-area-inset-top)) clamp(10px,2.4vw,24px) 30px;
+  background:linear-gradient(180deg,rgba(30,16,36,.97) 0%,rgba(30,16,36,.9) 50%,rgba(30,16,36,0) 100%);pointer-events:none}
+.bar>*{pointer-events:auto}
+.bar:before{content:"";position:absolute;inset:0;z-index:-1;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  -webkit-mask-image:linear-gradient(180deg,#000 45%,transparent);mask-image:linear-gradient(180deg,#000 45%,transparent)}
 .brand{display:flex;align-items:center;gap:10px}
 .apple{width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8a8f,var(--apple) 55%,#b51e2a);position:relative;box-shadow:0 3px 0 var(--deep)}
 .apple:before{content:"";position:absolute;left:13px;top:-7px;width:4px;height:10px;border-radius:2px;background:#7a4a22}
@@ -62,7 +69,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .hero-mid .pts{font:600 clamp(22px,3.4vw,30px)/1.1 var(--display)}
 .hero-mid .line1{font-weight:700;font-size:15px;margin-top:4px}
 .hero-mid .line2{font-size:13px;color:var(--mute);margin-top:2px}
-.prize{display:flex;align-items:center;gap:10px;background:var(--deep);border-radius:16px;padding:10px 12px;min-width:200px}
+.prize{display:flex;align-items:center;gap:12px;background:var(--deep);border-radius:18px;padding:10px 14px 10px 10px;min-width:220px}
 .prize b{font-family:var(--display);font-weight:600;font-size:15px;display:block}
 .prize small{color:var(--mute);font-weight:600}
 .medal{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;font:700 13px var(--display);color:var(--deep)}
@@ -84,13 +91,35 @@ button{font:inherit;color:inherit;cursor:pointer}
 .axis{position:absolute;left:0;right:0;bottom:0;height:14px;font-size:11px;color:var(--dim)}
 .axis span{position:absolute;transform:translateX(-50%)}
 
+/* pets and icons */
+.pet{position:relative;display:inline-grid;place-items:center;width:var(--s);height:var(--s);flex:none;border-radius:calc(var(--s) * .26);background:var(--deep);padding:2px;box-shadow:0 3px 0 var(--deep)}
+.pet img{width:100%;height:100%;display:block;object-fit:cover;border-radius:calc(var(--s) * .22)}
+.pet.rb{background:conic-gradient(from var(--a,0deg),#ff6b6b,#ffd166,#7ccb4e,#5cc8ff,#b58fd6,#ff6b6b);animation:spin 3s linear infinite}
+.pet.rb img{animation:hue 5s linear infinite}
+.pet.gd{background:linear-gradient(135deg,#fff2c2,#f6a93b 45%,#b36b10)}
+.pet.gd.tint img{filter:sepia(1) saturate(3.2) hue-rotate(-10deg) brightness(1.06)}
+.pet.sh:after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(circle at 22% 25%,#fff 0 1.5px,transparent 2.5px),radial-gradient(circle at 78% 30%,#fff 0 1.2px,transparent 2.2px),radial-gradient(circle at 60% 80%,#fff 0 1.5px,transparent 2.5px);animation:twinkle 1.6s ease-in-out infinite}
+@property --a{syntax:"<angle>";initial-value:0deg;inherits:false}
+@keyframes spin{to{--a:360deg}} @keyframes hue{to{filter:hue-rotate(360deg)}} @keyframes twinkle{50%{opacity:.25}}
+.li{width:20px;height:20px;border-radius:6px;vertical-align:-5px;margin-right:7px;background:var(--deep);object-fit:cover}
+.ladder{display:flex;gap:8px;margin-top:14px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
+.ladder::-webkit-scrollbar{display:none}
+.band{flex:1 0 92px;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--deep);border:2px solid transparent;border-radius:16px;padding:9px 6px 7px;text-align:center;min-width:92px}
+.band b{font:600 13px var(--display)} .band small{font-size:11px;color:var(--mute);font-weight:600;line-height:1.2}
+.band.cur{border-color:var(--caramel);background:#2a1820}
+.band.cur b{color:var(--caramel2)}
+.band.goal{border-color:var(--lilac);border-style:dashed}
+.ava{position:relative;width:36px;height:36px;flex:none}
+.ava img{width:36px;height:36px;border-radius:50%;background:var(--card);display:block}
+.ava .st{position:absolute;right:-2px;bottom:-2px;width:13px;height:13px;border:2.5px solid var(--card2)}
 /* squad */
 .squad{grid-area:squad}
 .pairs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:420px){.pairs{grid-template-columns:1fr}}
 .pair{background:var(--card2);border-radius:var(--r-chip);padding:8px 10px}
 .pair h3{font-size:13px;color:var(--mute);font-weight:600;display:flex;justify-content:space-between}
-.mem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
+.mem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
 .pair h3+.mem{border-top:0}
 .st{width:12px;height:12px;border-radius:50%;background:var(--dim)}
 .st.ok{background:var(--leaf)} .st.bad{background:var(--apple);animation:pulse 1.4s infinite}
@@ -146,7 +175,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 th{font:600 11.5px var(--text);color:var(--dim);text-align:left;padding:0 6px 6px}
 td{padding:6px;border-top:1px solid var(--line);white-space:nowrap}
 td.r,th.r{text-align:right}
-td.t{max-width:120px;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+td.t{max-width:150px;overflow:hidden;text-overflow:ellipsis;font-weight:700}
 tr.me td{background:rgba(246,169,59,.13);color:var(--caramel2)}
 tr.me td:first-child{border-radius:10px 0 0 10px} tr.me td:last-child{border-radius:0 10px 10px 0}
 tr.cut td{border-top:2px dashed var(--caramel)}
@@ -202,6 +231,7 @@ footer a{color:var(--mute)}
         <div class="prize" id="prize"><div class="medal h">H</div><div><b>–</b><small>Current reward</small></div></div>
       </div>
       <div class="track" id="track" aria-hidden="true"><div class="lane"></div></div>
+      <div class="ladder" id="ladder" aria-label="Rewards by place"></div>
     </section>
 
     <section class="card squad" aria-label="Squad">
@@ -281,6 +311,18 @@ const sgn = (n, f = k) => n == null ? "–" : (n > 0 ? "+" : n < 0 ? "−" : "")
 const hm = (t) => new Date(t * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
 const ago = (t) => { const m = Math.round((Date.now() / 1000 - t) / 60); return m < 1 ? "just now" : m < 60 ? m + " min ago" : Math.floor(m / 60) + " h " + (m % 60) + " min ago"; };
 let D = null, P = null, prevStreak = {}, alertsOn = false, firstPaint = true;
+const IMG = (id) => id ? "https://ps99.biggamesapi.io/image/" + String(id).replace("rbxassetid://", "") : "";
+const varName = (v) => v === "shinyRainbow" ? "Shiny Rainbow" : v === "shinyGold" ? "Shiny Golden" : v === "golden" ? "Golden" : v === "rainbow" ? "Rainbow" : v === "shiny" ? "Shiny" : "";
+function petIcon(item, size) {
+  if (!item) return "";
+  const ic = (D && D.season.petIcons && D.season.petIcons[item.id]) || {};
+  const golden = /gold/i.test(item.variant || ""), rainbow = /rainbow/i.test(item.variant || ""), shiny = item.shiny || /shiny/i.test(item.variant || "");
+  const src = IMG(golden && ic.g ? ic.g : ic.n || item.icon);
+  const cls = ["pet", rainbow ? "rb" : "", golden ? "gd" : "", golden && !ic.g ? "tint" : "", shiny ? "sh" : ""].filter(Boolean).join(" ");
+  const name = (varName(item.variant) ? varName(item.variant) + " " : "") + item.id;
+  return `<span class="${cls}" style="--s:${size}px" title="${esc(name)}"><img src="${src}" alt="${esc(name)}" loading="lazy" decoding="async"></span>`;
+}
+const leagueIcon = (icon) => icon ? `<img class="li" src="${IMG(icon)}" alt="" loading="lazy" decoding="async">` : "";
 
 /* ---------- alerts in the browser (server sends phone alerts separately) */
 function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(); [0, .22, .44].forEach((t) => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = 880; o.connect(g); g.connect(a.destination); g.gain.setValueAtTime(.2, a.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + t + .18); o.start(a.currentTime + t); o.stop(a.currentTime + t + .2); }); } catch (e) {} }
@@ -317,8 +359,12 @@ function renderHero(d) {
       : `At last hour's pace we're not catching up (${k(-rel)} slower per Turkey).`;
   }
   const items = p.reward && p.reward.items && p.reward.items[0];
-  const titan = /titanic|gargantuan/i.test(items ? items.id : "");
-  $("prize").innerHTML = `<div class="medal ${titan ? "t" : "h"}">${titan ? "T" : "H"}</div><div><b>${esc(items ? (items.variant !== "regular" ? cap(items.variant) + " " : "") + items.id : "No reward yet")}</b><small>Reward at #${p.r ?? "–"}${p.reward ? " (places " + esc(p.reward.placement || (p.reward.best + "–" + p.reward.worst)) + ")" : ""}</small></div>`;
+  $("prize").innerHTML = items ? `${petIcon(items, 54)}<div><b>${esc((varName(items.variant) ? varName(items.variant) + " " : "") + items.id)}</b><small>Our reward at #${p.r ?? "–"} (places ${esc(p.reward.placement || "")})</small></div>` : `<div><b>No reward yet</b><small>Score points to get on the board</small></div>`;
+  // reward ladder
+  const bands = (d.season.bands || []).filter((b) => b.items && b.items[0]);
+  const goal = bands.find((b) => b.worst === 100);
+  $("ladder").innerHTML = bands.map((b) => { const cur = p.r >= b.best && p.r <= b.worst; const isGoal = !cur && goal === b && p.r > 100;
+    const it = b.items[0]; return `<div class="band ${cur ? "cur" : ""} ${isGoal ? "goal" : ""}">${petIcon(it, 46)}<b>${esc(b.placement)}</b><small>${esc((varName(it.variant) ? varName(it.variant) + " " : "") + it.id.replace(/^(Gargantuan|Titanic|Huge) /, "$1\u00a0"))}${cur ? "<br><span class='gold'>We're here</span>" : isGoal ? "<br><span style='color:var(--lilac)'>Our goal</span>" : ""}</small></div>`; }).join("");
   // race track
   const tr = $("track"), pts = d.track.map((t) => t.p).concat(c100 ? [c100.p] : []), lo = Math.min(...pts), hi = Math.max(...pts), pad = (hi - lo) * .04 || 1;
   const x = (v) => ((v - lo + pad) / (hi - lo + 2 * pad)) * 100;
@@ -348,7 +394,9 @@ function renderSquad(d) {
       const presTxt = pr ? (pr.type === 2 ? "in game" : pr.type === 1 ? "online" : "status hidden") : "";
       const tk = m.turkeys || [], mx = Math.max(500, ...tk.filter((v) => v != null));
       const bars = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i style="height:${Math.max(4, 18 * v / mx)}px"></i>`).join("");
-      return `<div class="mem"><span class="st ${status[0]}" title="${presTxt}"></span><div><b>${esc(m.name)}</b><small>${status[1]}</small><div class="bars" title="Points on each of the last 12 Turkeys">${bars}</div></div><div class="p num">${k(m.points)}<small class="mute"><br>${m.h1 != null ? k(m.h1) + "/T" : ""}</small></div></div>`;
+      const av = P && P.avatars && P.avatars[u];
+      const dot = av ? `<span class="ava"><img src="${av}" alt="" loading="lazy"><span class="st ${status[0]}"></span></span>` : `<span class="st ${status[0]}" title="${presTxt}"></span>`;
+      return `<div class="mem">${dot}<div><b>${esc(m.name)}</b><small>${status[1]}</small><div class="bars" title="Points on each of the last 12 Turkeys">${bars}</div></div><div class="p num">${k(m.points)}<small class="mute"><br>${m.h1 != null ? k(m.h1) + "/T" : ""}</small></div></div>`;
     }).join("");
     return `<div class="pair"><h3><span>Pair ${i ? "B" : "A"}</span><span class="${ok ? "up" : "down"}">${ok ? "killing" : "short"}</span></h3>${rows}</div>`;
   }).join("");
@@ -380,9 +428,9 @@ function renderTables(d) {
   const arrow = (n) => n == null || n === 0 ? '<span class="dim">·</span>' : n > 0 ? `<span class="up">▲${n}</span>` : `<span class="down">▼${-n}</span>`;
   $("rivalsBody").innerHTML = d.rivals.map((r) => {
     const eta = r.me ? "" : r.eta == null ? '<span class="dim">–</span>' : r.gap > 0 ? `<span class="pill g" title="We pass them in ${r.eta} Turkeys">+1 in ${r.eta}</span>` : `<span class="pill r" title="They pass us in ${r.eta} Turkeys">−1 in ${r.eta}</span>`;
-    return `<tr class="${r.me ? "me" : ""}${r.r === 101 ? " cut" : ""}"><td class="num">${r.r}</td><td class="t">${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.gap > 0 ? "down" : r.gap < 0 ? "up" : ""}">${r.me ? "" : sgn(r.gap)}</td><td class="r num">${k(r.h1 ?? r.since)}</td><td class="r hide-s">${arrow(r.dr1h)}</td><td class="r">${eta}</td></tr>`;
+    return `<tr class="${r.me ? "me" : ""}${r.r === 101 ? " cut" : ""}"><td class="num">${r.r}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.gap > 0 ? "down" : r.gap < 0 ? "up" : ""}">${r.me ? "" : sgn(r.gap)}</td><td class="r num">${k(r.h1 ?? r.since)}</td><td class="r hide-s">${arrow(r.dr1h)}</td><td class="r">${eta}</td></tr>`;
   }).join("");
-  $("topBody").innerHTML = d.top20.map((r) => `<tr><td class="num">${r.r}</td><td class="t">${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}">${k(r.last)}</td><td class="r num hide-s">${k(r.h1 ?? r.since)}</td></tr>`).join("");
+  $("topBody").innerHTML = d.top20.map((r) => `<tr><td class="num">${r.r}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}">${k(r.last)}</td><td class="r num hide-s">${k(r.h1 ?? r.since)}</td></tr>`).join("");
 }
 
 function svgEl(w, h, inner, label) { return `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="${esc(label)}">${inner}</svg>`; }

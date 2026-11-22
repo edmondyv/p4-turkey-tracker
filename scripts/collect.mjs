@@ -160,11 +160,20 @@ export async function main() {
 
   // P4 detail
   const p4 = detail ? {
-    points: detail.Points, place: detail.Place, reward: detail.Reward || null,
+    points: detail.Points, place: detail.Place, reward: detail.Reward || null, icon: detail.Icon || null,
     members: (detail.PointContributions || []).filter((c) => c.Counted !== false).map((c) => ({
       uid: c.UserID, name: SQUAD[c.UserID] || c.DisplayName, display: c.DisplayName, points: c.Points, lastAt: c.Timestamp || null,
     })),
   } : null;
+
+  // ---------- reward pet icons (normal + golden thumbnails), fetched once per season
+  const rewardPets = [...new Set((season.placementRewards || []).flatMap((b) => (b.items || []).map((i) => i.id)))];
+  hist.petIcons ||= {};
+  for (const name of rewardPets.filter((n) => !hist.petIcons[n])) {
+    const res = await api(`/api/collection/Pets?configName=${encodeURIComponent(name)}`);
+    const p = Array.isArray(res) ? res.find((x) => x.configName === name) : null;
+    if (p) hist.petIcons[name] = { n: p.configData?.thumbnail || null, g: p.configData?.goldenThumbnail || null };
+  }
 
   // ---------- store this cycle's snapshot
   const pts = Object.fromEntries(rows.map((r) => [r.n, r.p]));
@@ -219,7 +228,7 @@ export async function main() {
     });
     const teamTurkeys = cycles.slice(-13).map((cy, i, arr) => (i === 0 ? null : { s: arr[i - 1].s, pts: diff(cy.p[LEAGUE], arr[i - 1].p[LEAGUE]) })).slice(1);
     p4out = {
-      ...me, reward: p4.reward, members, turkeys: teamTurkeys, checkedTurkey: checkS,
+      ...me, icon: p4.icon, reward: p4.reward, members, turkeys: teamTurkeys, checkedTurkey: checkS,
       gaps: Object.fromEntries(marks.filter((x) => [10, 25, 100].includes(x.r)).map((x) => [x.r, x.p - p4.points])),
       need100: c100 && turkeysLeft ? round((c100.proj - p4.points) / turkeysLeft) : null,
     };
@@ -236,7 +245,7 @@ export async function main() {
     });
     // race track: from the top-100 line down to a little below P4
     const lo = Math.max(myR + 8, 108), hi = Math.min(92, myR - 4);
-    track = rows.filter((r) => r.r >= hi && r.r <= lo).map((r) => ({ r: r.r, n: r.n, p: r.p, me: r.n === LEAGUE }));
+    track = rows.filter((r) => r.r >= hi && r.r <= lo).map((r) => ({ r: r.r, n: r.n, p: r.p, icon: r.icon, me: r.n === LEAGUE }));
     if (!track.some((t) => t.me)) track.push({ r: p4.place, n: LEAGUE, p: p4.points, me: true });
 
     // ---------- alerts (one grouped message per run)
@@ -337,7 +346,7 @@ export async function main() {
 
   const dashboard = {
     v: 2, updatedAt: now, league: LEAGUE, cycleSec: CYCLE,
-    season: { id: season.id, title: season.title, state: season.state, start: startTime, finish: season.finishTime, turkeysElapsed, turkeysLeft, totalLeagues, bands: season.placementRewards || [] },
+    season: { id: season.id, title: season.title, state: season.state, start: startTime, finish: season.finishTime, turkeysElapsed, turkeysLeft, totalLeagues, bands: season.placementRewards || [], petIcons: hist.petIcons || {} },
     p4: p4out, marks, rivals, track,
     top20: rows.slice(0, 20).map(enrich),
     dist: { last: dist(1), h1: dist(3) },
