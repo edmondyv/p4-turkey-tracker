@@ -286,7 +286,7 @@ footer a{color:var(--mute)}
         <div class="alt-in">
           <label>Main DPS<span class="f"><input id="acM" inputmode="decimal" autocomplete="off" value="3.46"><i>M</i></span></label>
           <label>Alt DPS<span class="f"><input id="acA" inputmode="decimal" autocomplete="off" value="2.43"><i>M</i></span></label>
-          <label>Timer at start<span class="f"><input id="acS" inputmode="decimal" autocomplete="off" value="20:00"></span></label>
+          <label>Timer at start<span class="f"><input id="acS" inputmode="decimal" autocomplete="off" value="15:00"></span></label>
           <label>Turkey HP<span class="f"><input id="acH" inputmode="decimal" autocomplete="off" value="3.5"><i>B</i></span></label>
         </div>
         <div class="alt-out" id="acOut" aria-live="polite"></div>
@@ -588,7 +588,7 @@ const timeIn = (v) => {
 const mmss = (t) => { t = Math.max(0, Math.round(t)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
 function altCalc() {
   const M = numIn($("acM").value, 1e5, 1e6), A = numIn($("acA").value, 1e5, 1e6), S = timeIn($("acS").value), H = numIn($("acH").value, 1e6, 1e9);
-  try { localStorage.setItem("p4.altcalc", JSON.stringify(AC.map((id) => $(id).value))); } catch (e) {}
+  try { localStorage.setItem("p4.altcalc2", JSON.stringify(AC.map((id) => $(id).value))); } catch (e) {}
   if (!M || !A || !S || !H) { $("acOut").innerHTML = ""; $("acNote").textContent = "Fill in both DPS values, the timer when you start hitting and the Turkey's HP."; return; }
   const solo = H / M, both = H / (M + A), pts = (x) => Math.round(1000 * x).toLocaleString("en-US");
   if (solo <= S - 120) {
@@ -605,7 +605,7 @@ function altCalc() {
   }).join("");
   $("acNote").textContent = `Big number = Turkey timer when the alt stops hitting. Main alone needs ${mmss(solo)}; with the alt the whole fight it dies after ${mmss(both)} and the main gets ≈ ${pts(M / (M + A))}.`;
 }
-try { const sv = JSON.parse(localStorage.getItem("p4.altcalc") || "null"); if (Array.isArray(sv)) AC.forEach((id, i) => { if (sv[i]) $(id).value = sv[i]; }); } catch (e) {}
+try { const sv = JSON.parse(localStorage.getItem("p4.altcalc2") || "null"); if (Array.isArray(sv)) AC.forEach((id, i) => { if (sv[i]) $(id).value = sv[i]; }); } catch (e) {}
 AC.forEach((id) => { $(id).addEventListener("input", altCalc); });
 $("acS").addEventListener("blur", () => { const s = timeIn($("acS").value); if (s) { $("acS").value = mmss(s); altCalc(); } });
 altCalc();
