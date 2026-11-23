@@ -135,6 +135,91 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mem small.lt{color:var(--mute)} .mem small.lt b{color:var(--ink);display:inline;font-weight:700} .mem small.lt b.hiv{color:#8fe3f5} .mem small.lt b.up{color:var(--leaf)}
 .mem .p small{font:600 11px var(--text)}
 
+/* solo event: hidden until the apple is tapped 10 times */
+.apple{touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.apple.tap{animation:squish .22s}
+@keyframes squish{45%{transform:scale(.84,1.1)}}
+.apple.spin{animation:spin .75s cubic-bezier(.3,1.5,.5,1)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.solo{margin-top:12px;scroll-margin-top:76px}
+.solo[hidden]{display:none}
+.solo.reveal{animation:soIn .55s cubic-bezier(.2,.9,.3,1.15)}
+@keyframes soIn{from{opacity:0;transform:translateY(16px) scale(.985)}}
+.solo-h{display:flex;align-items:baseline;gap:2px 10px;flex-wrap:wrap;margin-bottom:10px}
+.solo-h span{font-size:12.5px}
+.solo-g{display:grid;gap:12px;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,.85fr)}
+@media (max-width:1080px){.solo-g{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .so-board{grid-column:1/-1}}
+@media (max-width:680px){.solo-g{grid-template-columns:minmax(0,1fr)}}
+.so-box{background:var(--card2);border-radius:16px;padding:12px;min-width:0}
+.so-lbl{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;font-weight:700;color:var(--mute);margin:0 0 7px}
+.so-lbl span{color:var(--dim);font-weight:600}
+.so-rar{display:flex;flex-wrap:wrap;gap:5px}
+.rc{display:inline-flex;align-items:center;gap:7px;border:2px solid var(--line);background:var(--deep);border-radius:999px;padding:5px 12px 5px 9px;transition:border-color .15s,background .15s}
+.rc i{width:10px;height:10px;border-radius:50%;background:var(--rc);box-shadow:0 0 0 3px var(--rcb)}
+.rc span{font:600 13.5px/1.15 var(--display);color:var(--rc)}
+.rc.on{border-color:var(--rc);background:var(--rcb)}
+.so-var{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.vc{border:2px solid var(--line);background:var(--deep);border-radius:999px;padding:5px 11px;font-weight:700;font-size:12.5px;color:var(--mute);transition:border-color .15s,color .15s}
+.vc.on{color:var(--ink);border-color:var(--ink)}
+.vc.v-gold.on{border-color:#ffd23f;color:#ffe27a;background:rgba(255,210,63,.12)}
+.vc.v-rainbow.on{border-color:transparent;color:var(--ink);background:linear-gradient(var(--deep),var(--deep)) padding-box,linear-gradient(90deg,#ff5d6c,#ffb33f,#ffe45c,#6fe07a,#4fb6ff,#b46cf2) border-box}
+@media (min-width:681px){.vc.v-shiny{margin-left:auto}}
+.vc.v-shiny.on{border-color:#bfefff;color:#e6f9ff;background:rgba(191,239,255,.1);box-shadow:0 0 14px rgba(191,239,255,.28)}
+.fld{display:flex;align-items:center;gap:4px;background:var(--deep);border:2px solid var(--line);border-radius:10px;padding:0 9px;transition:border-color .15s}
+.fld:focus-within{border-color:var(--caramel)}
+.fld input{width:100%;min-width:0;border:0;background:none;color:var(--ink);font:600 18px var(--display);padding:6px 0;outline:none}
+.fld i{font-style:normal;color:var(--dim);font-weight:700;font-size:13px}
+.so-ch{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center;margin-top:4px}
+.zbar{position:relative;height:30px}
+.zbar .zones{position:absolute;left:11px;right:11px;top:10px;height:10px;border-radius:6px;overflow:hidden;display:flex;background:var(--deep)}
+.zones i{display:block;height:100%;transition:width .25s}
+.zones .z0{background:rgba(240,69,79,.6)} .zones .z1{background:rgba(246,169,59,.8)} .zones .z2{background:rgba(124,203,78,.85)}
+.zbar input{position:absolute;inset:0;width:100%;height:30px;margin:0;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
+.zbar input::-webkit-slider-runnable-track{height:30px;background:transparent}
+.zbar input::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:4px;border-radius:50%;background:var(--ink);border:4px solid var(--deep);box-shadow:0 2px 0 var(--deep)}
+.zbar input::-moz-range-track{height:30px;background:transparent}
+.zbar input::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--ink);border:4px solid var(--deep)}
+.ticks{position:relative;height:14px;margin:0 11px;font-size:10.5px;color:var(--dim);font-weight:700}
+.ticks span{position:absolute;top:0;transform:translateX(-50%)}
+.so-res{display:flex;gap:12px;align-items:stretch;margin-top:12px}
+.so-v{flex:none;min-width:122px;border-radius:14px;padding:9px 12px;background:rgba(255,241,224,.06)}
+.so-v b{display:block;font:600 32px/1 var(--display)}
+.so-v span{display:block;font-size:11.5px;color:var(--mute);font-weight:600;margin-top:3px}
+.so-v em{display:inline-block;margin-top:7px;font-style:normal;font-weight:800;font-size:12px;padding:2px 9px;border-radius:999px}
+.so-v.skip b{color:#ff8a90} .so-v.skip em{background:rgba(240,69,79,.2);color:#ff8a90}
+.so-v.ok b{color:var(--caramel2)} .so-v.ok em{background:rgba(246,169,59,.2);color:var(--caramel2)}
+.so-v.great b{color:var(--leaf)} .so-v.great em{background:rgba(124,203,78,.2);color:var(--leaf)}
+.so-facts{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;align-content:center;min-width:0}
+.so-facts span{display:flex;flex-direction:column;font-size:11.5px;color:var(--mute);font-weight:600}
+.so-facts b{color:var(--ink);font:600 16px/1.2 var(--display)}
+.tt{width:calc(100% + 8px);border-collapse:separate;border-spacing:4px;margin:-4px}
+.tt thead th{font-size:12px;color:var(--mute);font-weight:700;text-align:center;padding:0 0 1px}
+.tt thead th small{display:block;font-size:10.5px;color:var(--dim)}
+.tt tbody th{text-align:left;font:600 13.5px var(--display);color:var(--rc);white-space:nowrap;padding-right:2px}
+.tt tbody th i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--rc);margin-right:6px;vertical-align:1px}
+.tt tbody th small{display:block;font:700 10.5px var(--text);color:var(--dim);padding-left:15px}
+.tt td{padding:0}
+.tt td button{width:100%;display:block;border:2px solid transparent;background:var(--deep);border-radius:10px;padding:5px 3px;text-align:center;transition:border-color .15s,background .15s}
+.tt td button b{display:block;font:600 16px/1.15 var(--display)}
+.tt td button small{display:block;font-size:10.5px;color:var(--dim);font-weight:700;line-height:1.3}
+.tt td button.on{border-color:var(--rc);background:var(--rcb)}
+.tt td button.nv b{color:var(--dim)}
+.so-base{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:10px;font-size:12px;color:var(--mute);line-height:1.45}
+.so-base b{color:var(--ink);font-weight:800}
+.so-base .fld{width:76px;padding:0 7px} .so-base .fld input{font-size:15px;padding:3px 0}
+.so-notes{margin:8px 0 0;font-size:11.5px;color:var(--dim);font-weight:600;line-height:1.45}
+.so-cut{font-size:12.5px;color:var(--mute);margin-bottom:6px} .so-cut b{color:var(--ink)}
+.so-p{padding:7px 0 5px;border-top:1px solid rgba(255,241,224,.07)}
+.so-pn{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:baseline}
+.so-pn span:first-child{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.so-pn b{font:600 15px var(--display)}
+.so-pb{height:5px;border-radius:3px;background:var(--deep);margin:5px 0 3px;overflow:hidden}
+.so-pb i{display:block;height:100%;background:var(--caramel);border-radius:3px}
+.so-pb i.in{background:var(--leaf)}
+.so-p small{font-size:11px;color:var(--dim);font-weight:700}
+.so-foot{font-size:11px;color:var(--dim);margin-top:6px}
+@media (prefers-reduced-motion:reduce){.apple.tap,.apple.spin,.solo.reveal{animation:none}}
+
 /* alt timer */
 .alt{background:var(--card2);border-radius:var(--r-chip);padding:10px;margin-top:10px}
 .alt-h{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap;margin-bottom:8px}
@@ -366,6 +451,31 @@ footer a{color:var(--mute)}
     </section>
   </main>
 
+  <section class="card solo" id="solo" hidden aria-label="Solo event">
+    <header class="solo-h"><h2>Solo event</h2><span class="mute">Which pets are worth a net</span></header>
+    <div class="solo-g">
+      <div class="so-box">
+        <div class="so-lbl">Pet</div>
+        <div class="so-rar" id="soRar"></div>
+        <div class="so-var" id="soVar"></div>
+        <div class="so-lbl" style="margin-top:12px">Catch chance shown in game</div>
+        <div class="so-ch">
+          <span class="fld"><input id="soCh" inputmode="decimal" autocomplete="off" aria-label="Catch chance"><i>%</i></span>
+          <div><div class="zbar"><div class="zones" id="soZones"></div><input type="range" id="soRange" min="0" max="1000" step="1" aria-label="Catch chance slider"></div>
+          <div class="ticks"><span style="left:0">0.1%</span><span style="left:33.33%">1%</span><span style="left:66.67%">10%</span><span style="left:100%">100%</span></div></div>
+        </div>
+        <div class="so-res" id="soRes" aria-live="polite"></div>
+      </div>
+      <div class="so-box">
+        <div class="so-lbl">Lowest chance worth a net<span id="soShNote"></span></div>
+        <table class="tt" id="soTab"></table>
+        <div class="so-base"><b>Baseline</b><span>a normal bunny at</span><span class="fld"><input id="soBase" inputmode="decimal" autocomplete="off" aria-label="Normal bunny catch chance"><i>%</i></span><span id="soBaseV"></span></div>
+        <p class="so-notes">Worth a net: beats the baseline. Great: twice the baseline. Chances in game already include your rebirths. Auto hunt halves every pet, so it doesn't move these lines.</p>
+      </div>
+      <div class="so-box so-board" id="soBoard"></div>
+    </div>
+  </section>
+
   <footer><span id="foot">Data from BIG Games' public API, collected every 5 minutes.</span><span>Turkeys land at :00, :20 and :40.</span></footer>
 </div>
 
@@ -576,7 +686,7 @@ function renderSide(d) {
 
 function render() {
   if (!D || !D.p4) return;
-  renderHero(D); renderSquad(D); renderPace(D); renderTables(D); renderChart(D); renderDist(D); renderSide(D); tick();
+  renderHero(D); renderSquad(D); renderPace(D); renderTables(D); renderChart(D); renderDist(D); renderSide(D); soBoard(D); tick();
   $("upd").innerHTML = `<span class="hide-xs">Updated </span>${hm(D.updatedAt)}`;
   $("foot").textContent = `Data from BIG Games' public API, last snapshot ${ago(D.updatedAt)}.${D.ref ? ` Per-Turkey numbers use the snapshot of ${hm(D.ref.takenAt)}, taken while no Turkey was up.` : ""}`;
   firstPaint = false;
@@ -587,6 +697,94 @@ async function load() {
 }
 async function loadPresence() { try { const r = await fetch("/api/status", { cache: "no-store" }); if (r.ok) { P = await r.json(); if (D) renderSquad(D); } } catch (e) {} }
 load(); loadPresence(); setInterval(load, 60000); setInterval(loadPresence, 60000);
+
+// ---------- solo event (hidden: tap the apple 10 times to show or hide it)
+const SO_R = [
+  { k: "common", n: "Common", p: 1, c: "#e6d6ee", b: "rgba(230,214,238,.14)" },
+  { k: "uncommon", n: "Uncommon", p: 2, c: "#7ccb4e", b: "rgba(124,203,78,.16)" },
+  { k: "rare", n: "Rare", p: 5, c: "#4fa8ff", b: "rgba(79,168,255,.17)" },
+  { k: "epic", n: "Epic", p: 15, c: "#bb72f5", b: "rgba(187,114,245,.18)" },
+  { k: "huge", n: "Huge", p: 60, c: "#ffd23f", b: "rgba(255,210,63,.16)" },
+];
+const SO_V = [{ k: "normal", n: "Normal", m: 1 }, { k: "gold", n: "Gold", m: 2 }, { k: "rainbow", n: "Rainbow", m: 5 }];
+const so = Object.assign({ r: "epic", v: "normal", sh: false, ch: "9", base: "97" }, (() => { try { return JSON.parse(localStorage.getItem("p4.solo.calc") || "{}"); } catch (e) { return {}; } })());
+const soSave = () => { try { localStorage.setItem("p4.solo.calc", JSON.stringify(so)); } catch (e) {} };
+const soNum = (v) => { const x = parseFloat(String(v).replace(",", ".")); return isFinite(x) && x > 0 ? x : null; };
+const soPct = (x) => (x >= 100 ? "never" : (x < 1 ? x.toFixed(2) : x < 10 ? x.toFixed(1) : String(Math.round(x))) + "%");
+const soFmt = (x) => (x < 1 ? x.toFixed(2) : x < 10 ? x.toFixed(1) : String(Math.round(x)));
+const soPts = (r, v) => r.p * v.m * (so.sh ? 3 : 1);
+const soBase = () => Math.min(100, soNum(so.base) || 97) / 100; // points per net from a normal bunny
+const SL0 = -1, SL1 = 2; // slider runs 0.1% .. 100% on a log scale
+const soPos = (x) => (Math.log10(Math.min(100, Math.max(0.1, x))) - SL0) / (SL1 - SL0);
+const soFromPos = (p) => Math.pow(10, SL0 + p * (SL1 - SL0));
+function soRender(fromInput) {
+  const r = SO_R.find((x) => x.k === so.r) || SO_R[3], v = SO_V.find((x) => x.k === so.v) || SO_V[0], pts = soPts(r, v), b = soBase();
+  $("soRar").innerHTML = SO_R.map((x) => `<button type="button" class="rc${x === r ? " on" : ""}" style="--rc:${x.c};--rcb:${x.b}" data-r="${x.k}" aria-pressed="${x === r}"><i></i><span>${x.n}</span></button>`).join("");
+  $("soVar").innerHTML = SO_V.map((x) => `<button type="button" class="vc v-${x.k}${x === v ? " on" : ""}" data-v="${x.k}" aria-pressed="${x === v}">${x.n}${x.m > 1 ? " ×" + x.m : ""}</button>`).join("") +
+    `<button type="button" class="vc v-shiny${so.sh ? " on" : ""}" data-sh="1" aria-pressed="${so.sh}">✦ Shiny ×3</button>`;
+  const be = (100 * b) / pts, gr = (200 * b) / pts, pBe = soPos(be), pGr = soPos(gr);
+  $("soZones").innerHTML = `<i class="z0" style="width:${pBe * 100}%"></i><i class="z1" style="width:${Math.max(0, pGr - pBe) * 100}%"></i><i class="z2" style="flex:1"></i>`;
+  const ch = soNum(so.ch);
+  if (!fromInput) $("soCh").value = so.ch;
+  if (ch) $("soRange").value = Math.round(soPos(ch) * 1000);
+  if (!ch) $("soRes").innerHTML = `<div class="mute" style="font-size:12.5px">Type the catch chance you see on the pet, or drag the bar.</div>`;
+  else {
+    const ev = (Math.min(ch, 100) / 100) * pts, ratio = ev / b, cls = ratio >= 2 ? "great" : ratio >= 1 ? "ok" : "skip";
+    $("soRes").innerHTML = `<div class="so-v ${cls}"><b class="num">${ev < 10 ? ev.toFixed(2) : ev.toFixed(1)}</b><span>points per net</span><em>${ratio >= 2 ? "Go for it" : ratio >= 1 ? "Worth a net" : "Skip it"}</em></div>
+      <div class="so-facts"><span>Each catch<b class="num">${pts} pts</b></span><span>Vs a bunny<b class="num">${ratio.toFixed(1)}×</b></span><span>Worth it from<b class="num">${soPct(be)}</b></span><span>Great from<b class="num">${soPct(gr)}</b></span></div>`;
+  }
+  $("soShNote").textContent = so.sh ? "shiny included" : "";
+  $("soBaseV").textContent = `= ${b.toFixed(2)} pts per net`;
+  $("soTab").innerHTML = `<thead><tr><th></th>${SO_V.map((x) => `<th>${x.n}<small>×${x.m * (so.sh ? 3 : 1)}</small></th>`).join("")}</tr></thead><tbody>` +
+    SO_R.map((rr) => `<tr><th style="--rc:${rr.c}"><i></i>${rr.n}<small>${rr.p} pt${rr.p > 1 ? "s" : ""}</small></th>` + SO_V.map((vv) => {
+      const p = soPts(rr, vv), t = (100 * b) / p, g = (200 * b) / p, on = rr === r && vv === v;
+      return `<td><button type="button" class="${on ? "on" : ""}${t >= 100 ? " nv" : ""}" style="--rc:${rr.c};--rcb:${rr.b}" data-r="${rr.k}" data-v="${vv.k}" aria-label="${rr.n} ${vv.n}: worth a net from ${soPct(t)}"><b class="num">${soPct(t)}</b><small>${p} pt${p > 1 ? "s" : ""}</small><small>great ${soPct(g)}</small></button></td>`;
+    }).join("") + "</tr>").join("") + "</tbody>";
+}
+function soBoard(d) {
+  const el = $("soBoard"), c = d && d.catches;
+  if (!el || $("solo").hidden) return;
+  if (!c) { el.innerHTML = '<div class="so-lbl">Catches board</div><div class="empty">No live catches board.</div>'; return; }
+  const cut = c.cutoff1003, left = c.endsAt - Date.now() / 1000;
+  el.innerHTML = `<div class="so-lbl">Catches board<span>${left > 0 ? `ends in ${Math.floor(left / 86400)}d ${Math.floor((left % 86400) / 3600)}h` : "ended"}</span></div>
+    <div class="so-cut">The Titanic needs the top 1,003: <b class="num">${full(cut)}</b> points right now.</div>` +
+    c.players.slice().sort((a, b) => (b.value || 0) - (a.value || 0)).map((x) => {
+      const val = x.value, gap = cut != null && val != null ? cut - val : null, w = cut && val ? Math.min(1, val / cut) : 0;
+      return `<div class="so-p"><div class="so-pn"><span>${esc(x.name)}</span><span class="num mute">${x.rank ? "#" + full(x.rank) : Math.round((c.listSize || 10000) / 1000) + "k+"}</span><b class="num">${val != null ? full(val) : c.floor ? "under " + full(c.floor) : "–"}</b></div>
+        <div class="so-pb"><i class="${gap != null && gap <= 0 ? "in" : ""}" style="width:${w * 100}%"></i></div><small>${gap == null ? "Not in the listed top " + full(c.listSize || 10000) + " yet" : gap <= 0 ? "In the Titanic zone" : full(gap) + " points to go"}</small></div>`;
+    }).join("") + `<div class="so-foot">The board refreshes every 3 to 5 minutes, and a catch can take up to 10 minutes to show.</div>`;
+}
+$("solo").addEventListener("click", (e) => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.sh) so.sh = !so.sh;
+  if (t.dataset.r) so.r = t.dataset.r;
+  if (t.dataset.v) so.v = t.dataset.v;
+  soSave(); soRender();
+});
+$("soCh").addEventListener("input", (e) => { so.ch = e.target.value; soSave(); soRender(true); });
+$("soCh").addEventListener("blur", () => { const x = soNum(so.ch); if (x) { so.ch = soFmt(Math.min(100, x)); soSave(); soRender(); } });
+$("soRange").addEventListener("input", (e) => { so.ch = soFmt(soFromPos(e.target.value / 1000)); soSave(); soRender(); });
+$("soBase").value = so.base;
+$("soBase").addEventListener("input", (e) => { so.base = e.target.value; soSave(); soRender(true); });
+function setSolo(on, fromTap) {
+  const s = $("solo"); s.hidden = !on;
+  try { on ? localStorage.setItem("p4.solo", "1") : localStorage.removeItem("p4.solo"); } catch (e) {}
+  if (!on) return;
+  soRender(); soBoard(D);
+  if (fromTap) {
+    s.classList.remove("reveal"); void s.offsetWidth; s.classList.add("reveal");
+    s.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
+}
+{
+  const ap = document.querySelector(".apple"); let taps = 0, last = 0;
+  ap.addEventListener("click", () => {
+    const t = Date.now(); taps = t - last < 700 ? taps + 1 : 1; last = t;
+    ap.classList.remove("tap", "spin"); void ap.offsetWidth;
+    if (taps >= 10) { taps = 0; ap.classList.add("spin"); setSolo($("solo").hidden, true); } else ap.classList.add("tap");
+  });
+  try { if (localStorage.getItem("p4.solo") === "1") setSolo(true, false); } catch (e) {}
+}
 
 // ---------- alt timer: when should the alt leave so the main keeps the biggest share?
 // Points are split by damage, so every second the alt hits costs the main. Both hit from the
