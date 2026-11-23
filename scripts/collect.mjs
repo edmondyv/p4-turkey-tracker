@@ -441,13 +441,16 @@ export async function main() {
   const catchPeople = { ...SQUAD, ...CATCH_EXTRA };
   if (liveBoards.length) {
     const b = liveBoards[0], id = encodeURIComponent(b.id);
-    const [cut, ...entries] = await Promise.all([
+    const size = b.listSize || 10000; // the board only lists this many players
+    const [cut, last, ...entries] = await Promise.all([
       api(`/v1/leaderboards/${id}?source=live&page=11&pageSize=100`),
+      api(`/v1/leaderboards/${id}?source=live&page=${size}&pageSize=1`),
       ...Object.keys(catchPeople).map((u) => api(`/v1/leaderboards/${id}/players/${u}?source=live`)),
     ]);
     catches = {
       id: b.id, endsAt: b.scoringEndsAt,
       cutoff1003: cut && cut.entries && cut.entries[2] ? cut.entries[2].Value : null,
+      listSize: size, floor: last && last.entries && last.entries[0] ? last.entries[0].Value : null,
       players: Object.keys(catchPeople).map((u, i) => ({ uid: Number(u), name: catchPeople[u], rank: entries[i]?.entry?.Rank ?? null, value: entries[i]?.entry?.Value ?? null })),
     };
   }

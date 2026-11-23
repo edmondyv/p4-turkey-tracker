@@ -569,7 +569,9 @@ function renderSide(d) {
   const c = d.catches;
   if (!c) { $("catches").innerHTML = '<div class="empty">No live catches board.</div>'; return; }
   $("catches").innerHTML = `<div class="mute" style="font-size:12px;margin-bottom:4px">Titanic for the top 1,003: <b class="num" style="color:var(--ink)">${full(c.cutoff1003)}</b> catches now</div>` +
-    c.players.slice().sort((a, b) => (b.value || 0) - (a.value || 0)).map((x) => `<div class="catch"><span>${esc(x.name)}</span><span class="num mute">${x.rank ? "#" + full(x.rank) : "–"}</span><b class="num">${full(x.value)}</b></div>`).join("");
+    c.players.slice().sort((a, b) => (b.value || 0) - (a.value || 0)).map((x) => x.rank
+      ? `<div class="catch"><span>${esc(x.name)}</span><span class="num mute">#${full(x.rank)}</span><b class="num">${full(x.value)}</b></div>`
+      : `<div class="catch" title="The board only lists the top ${full(c.listSize || 10000)}"><span>${esc(x.name)}</span><span class="num mute">${Math.round((c.listSize || 10000) / 1000)}k+</span><b class="num mute">${c.floor ? "under " + full(c.floor) : "–"}</b></div>`).join("");
 }
 
 function render() {
