@@ -203,6 +203,40 @@ export async function main() {
   if (p4) pts[LEAGUE] = p4.points;
   const m = p4 ? Object.fromEntries(p4.members.map((x) => [x.uid, x.points])) : {};
   if (live) upsertCycle(hist.cycles, { t: now, p: pts, m });
+
+  // Exact squad points per Turkey. Each member's contribution carries the time of its last credit,
+  // so a points increase since the previous run belongs to the Turkey that was up at that moment.
+  // This stays right when a kill lands late in the 20 minutes (e.g. alone with an alt), which
+  // snapshot differences would push into the next Turkey.
+  if (!hist.mt) {
+    // first run: seed finished Turkeys from snapshot differences and start timestamp tracking from
+    // the snapshot filed for the current landing, so credits after it still land in the right Turkey
+    const cy = hist.cycles, base = cy.find((c) => c.s === s0 && c.m);
+    hist.mt = { since: base ? base.t : now, from: null, prev: {}, by: {} };
+    if (base) {
+      for (const [u, v] of Object.entries(base.m)) hist.mt.prev[u] = { points: v, lastAt: null, t: base.t };
+      for (let c = s0 - CYCLE; ; c -= CYCLE) {
+        const a = cy.find((x) => x.s === c && x.m), b = cy.find((x) => x.s === c + CYCLE && x.m);
+        if (!a || !b || c < s0 - 72 * CYCLE) break;
+        for (const [u, v] of Object.entries(b.m)) if (a.m[u] != null) (hist.mt.by[u] ||= {})[c] = v - a.m[u];
+        hist.mt.from = c;
+      }
+    }
+  }
+  if (p4 && live) {
+    for (const x of p4.members) {
+      const pv = hist.mt.prev[x.uid];
+      if (pv && x.points > pv.points && x.lastAt) {
+        const c = x.lastAt - (x.lastAt % CYCLE), by = (hist.mt.by[x.uid] ||= {});
+        by[c] = (by[c] || 0) + (x.points - pv.points);
+      }
+      hist.mt.prev[x.uid] = { points: x.points, lastAt: x.lastAt, t: now };
+    }
+    const keep = now - 600 * CYCLE;
+    for (const by of Object.values(hist.mt.by)) for (const c of Object.keys(by)) if (+c < keep) delete by[c];
+  }
+  const mtFrom = hist.mt.from ?? hist.mt.since - (hist.mt.since % CYCLE) + CYCLE; // first Turkey covered
+  const exact = (uid, c) => (c >= mtFrom ? (hist.mt.by[uid]?.[c] || 0) : undefined);
   if (hist.cycles.length > MAX_CYCLES) hist.cycles = hist.cycles.slice(-MAX_CYCLES);
   const cycles = hist.cycles;
   const pace = makePace(cycles);
@@ -248,14 +282,20 @@ export async function main() {
     const c100 = marks.find((x) => x.r === 100);
     const lastCompleted = s0 - CYCLE; // Turkey that landed 20 min before the current one
     const checkS = now - s0 >= 240 ? lastCompleted : lastCompleted - CYCLE; // 4 min grace (API cache + late points)
+    // the last 12 finished Turkeys (the one that is up now is shown separately as "This Turkey")
+    const recAt = (c) => cycles.find((x) => x.s === c);
+    const done12 = Array.from({ length: 12 }, (_, i) => s0 - (12 - i) * CYCLE);
     const members = Object.keys(SQUAD).map(Number).map((uid) => {
       const c = p4.members.find((x) => x.uid === uid) || { uid, name: SQUAD[uid], points: 0, lastAt: null };
       const lastCycle = c.lastAt ? c.lastAt - (c.lastAt % CYCLE) : null;
       const streak = lastCycle == null ? null : Math.max(0, Math.round((checkS - lastCycle) / CYCLE));
-      const turkeys = cycles.slice(-13).map((cy, i, arr) => (i === 0 ? null : diff(cy.m?.[uid], arr[i - 1].m?.[uid]))).slice(1);
+      const turkeys = done12.map((c) => exact(uid, c) ?? diff(recAt(c + CYCLE)?.m?.[uid], recAt(c)?.m?.[uid]));
       return { uid, name: SQUAD[uid], display: c.display || c.name, points: c.points, lastAt: c.lastAt, streak, h1: round(pace(`m:${uid}`, 3)), turkeys };
     });
-    const teamTurkeys = cycles.slice(-13).map((cy, i, arr) => (i === 0 ? null : { s: arr[i - 1].s, pts: diff(cy.p[LEAGUE], arr[i - 1].p[LEAGUE]) })).slice(1);
+    const uids = p4.members.map((x) => x.uid);
+    const exactTeam = (c) => (c >= mtFrom ? uids.reduce((a, u) => a + exact(u, c), 0) : undefined);
+    const teamTurkeys = done12.map((c) => ({ s: c, pts: exactTeam(c) ?? diff(recAt(c + CYCLE)?.p?.[LEAGUE], recAt(c)?.p?.[LEAGUE]) }));
+    if (exactTeam(s0 - CYCLE) != null) me.last = exactTeam(s0 - CYCLE);
     // the 20 teams just ahead: median pace (robust to solo-killing outliers), how many we outpace,
     // and our projected rank if every top-300 team keeps its own 6-hour pace
     const myR0 = p4.place || 999;
@@ -279,7 +319,9 @@ export async function main() {
     const openRec = cycles.find((c) => c.s === s0);
     // points per member since the current Turkey landed (exact: points are credited at the kill)
     const scoredNow = members.filter((x) => x.lastAt && x.lastAt >= s0).map((x) => x.uid);
-    const thisTurkey = openRec && openRec.p[LEAGUE] != null ? {
+    const thisTurkey = s0 >= mtFrom ? {
+      s: s0, pts: exactTeam(s0), scored: scoredNow, per: Object.fromEntries(members.map((x) => [x.uid, exact(x.uid, s0)])),
+    } : openRec && openRec.p[LEAGUE] != null ? {
       s: s0, pts: p4.points - openRec.p[LEAGUE], scored: scoredNow,
       per: Object.fromEntries(members.map((x) => [x.uid, openRec.m && openRec.m[x.uid] != null ? x.points - openRec.m[x.uid] : null])),
     } : { s: s0, pts: null, scored: scoredNow, per: null };

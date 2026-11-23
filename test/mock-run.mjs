@@ -25,10 +25,15 @@ function p4Members(s) { // panda drops out between cycles 60 and 66
 }
 function state(t) {
   const pts = new Array(N).fill(0), mem = Object.fromEntries(SQ.map((u) => [u, { p: 0, ts: null }]));
-  for (let s = START; s + CREDIT <= t; s += CYCLE) {
-    for (let i = 0; i < N; i++) if (names[i] !== "P4") pts[i] += turkeyPts(i, s);
+  // LATE=1: from cycle 80 kxngcebu kills alone with an alt, 19.5 min after landing, for 700
+  const lateAt = (u, s) => process.env.LATE && u === 677658744 && (s - START) / CYCLE >= 80 ? 1170 : CREDIT - 30;
+  for (let s = START; s + 30 <= t; s += CYCLE) {
+    if (s + CREDIT <= t) for (let i = 0; i < N; i++) if (names[i] !== "P4") pts[i] += turkeyPts(i, s);
     const m = p4Members(s);
-    for (const u of SQ) if (m[u] > 0) { mem[u].p += m[u]; mem[u].ts = s + CREDIT - 30; }
+    for (const u of SQ) {
+      const v = lateAt(u, s) === 1170 ? 700 : m[u];
+      if (v > 0 && s + lateAt(u, s) <= t) { mem[u].p += v; mem[u].ts = s + lateAt(u, s); }
+    }
   }
   pts[130] = SQ.reduce((a, u) => a + mem[u].p, 0);
   return { pts, mem };
