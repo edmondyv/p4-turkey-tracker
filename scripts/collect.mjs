@@ -126,7 +126,9 @@ async function alarm(title, body) {
     method: "POST", body,
     headers: {
       Title: title, Tags: "rotating_light,turkey", Priority: "urgent",
-      Actions: `http, Stop alarm, ${ack}, method=POST, body=stop, clear=true; http, Snooze 1 h, ${ack}, method=POST, body=snooze, clear=true`,
+      // clear=false: ntfy only silences a ringing ("insistent") notification when you swipe it away or open it.
+      // If a button removed it, the sound would keep looping with nothing left to swipe.
+      Actions: `http, Stop alarm, ${ack}, method=POST, body=stop, clear=false; http, Snooze 1 h, ${ack}, method=POST, body=snooze, clear=false`,
     },
   }).catch(() => {});
 }
