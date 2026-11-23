@@ -316,6 +316,9 @@ tr.cut td{border-top:2px dashed var(--caramel)}
 .pill{display:inline-block;padding:1px 7px;border-radius:999px;font-weight:700;font-size:11.5px;background:var(--card2)}
 .pill.g{color:var(--leaf)} .pill.r{color:#ff8d94}
 @media (max-width:680px){.hide-s{display:none}}
+td.late{color:var(--dim)}
+.tnote{font-size:11.5px;color:var(--dim);font-weight:600;margin-top:6px;line-height:1.4}
+.tnote:empty{display:none}
 
 .seg{display:inline-flex;background:var(--deep);border-radius:999px;padding:3px;gap:2px}
 .seg button{border:0;background:none;border-radius:999px;padding:4px 10px;white-space:nowrap;font:700 12px var(--text);color:var(--mute)}
@@ -443,12 +446,14 @@ footer a{color:var(--mute)}
 
     <section class="card rivals" aria-label="Rivals">
       <header><h2>Rivals around us</h2><span class="mute" id="rivNote">Points per Turkey</span></header>
-      <div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th class="r">Points</th><th class="r">Gap</th><th class="r" title="Points on the last completed Turkey">Last</th><th class="r hide-s" title="Average points per Turkey over the last hour">1 h pace</th><th class="r" title="Rank change if both keep last hour's pace">Swap</th></tr></thead><tbody id="rivalsBody"></tbody></table></div>
+      <div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th class="r hide-s">Points</th><th class="r">Gap</th><th class="r" title="Points on the last completed Turkey">Last</th><th class="r" title="Average points per Turkey over the last 3 Turkeys (1 hour)">Avg 3</th><th class="r" title="Rank change if both keep last hour's pace">Swap</th></tr></thead><tbody id="rivalsBody"></tbody></table></div>
+      <div class="tnote" id="rivalsLate"></div>
     </section>
 
     <section class="card top20" aria-label="Top 20">
       <header><h2>Top 20 live</h2><span class="mute" id="topNote">Last Turkey</span></header>
-      <div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th class="r">Points</th><th class="r">Last</th><th class="r hide-s">1 h pace</th></tr></thead><tbody id="topBody"></tbody></table></div>
+      <div class="scroll"><table><thead><tr><th>#</th><th>Team</th><th class="r">Points</th><th class="r">Last</th><th class="r" title="Average points per Turkey over the last 3 Turkeys (1 hour)">Avg 3</th></tr></thead><tbody id="topBody"></tbody></table></div>
+      <div class="tnote" id="topLate"></div>
     </section>
 
     <section class="card chart" aria-label="Gap to the top 100 over time">
@@ -528,6 +533,17 @@ const ago = (t) => { const m = Math.round((Date.now() / 1000 - t) / 60); return 
 let D = null, P = null, prevStreak = {}, alertsOn = false, firstPaint = true;
 const IMG = (id) => id ? "https://ps99.biggamesapi.io/image/" + String(id).replace("rbxassetid://", "") : "";
 const varName = (v) => v === "shinyRainbow" ? "Shiny Rainbow" : v === "shinyGold" ? "Shiny Golden" : v === "golden" ? "Golden" : v === "rainbow" ? "Rainbow" : v === "shiny" ? "Shiny" : "";
+// one player makes at most 1,000 per Turkey, so a team can't make more than 1,000 per member;
+// above that, points from the Turkey before arrived late and landed in this one
+const lateCap = (r) => 1000 * (r.m || 4);
+function lastCell(r) {
+  const late = r.last != null && r.last > lateCap(r);
+  return `<td class="r num ${late ? "late" : r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}"${late ? ` title="Includes late points from the Turkey before"` : ""}>${k(r.last)}${late ? "*" : ""}</td>`;
+}
+function lateNote(id, rows) {
+  const n = rows.filter((r) => r.last != null && r.last > lateCap(r)).length;
+  $(id).textContent = n ? `* More than 1,000 per player is impossible in one Turkey: these include points from the Turkey before that arrived late. Avg 3 smooths it out.` : "";
+}
 function petIcon(item, size) {
   if (!item) return "";
   const ic = (D && D.season.petIcons && D.season.petIcons[item.id]) || {};
@@ -660,9 +676,11 @@ function renderPace(d) {
 function renderTables(d) {
   $("rivalsBody").innerHTML = d.rivals.map((r) => {
     const eta = r.me ? "" : r.eta == null ? '<span class="dim">–</span>' : r.gap > 0 ? `<span class="pill g" title="We pass them in ${r.eta} Turkeys">+1 in ${r.eta}</span>` : `<span class="pill r" title="They pass us in ${r.eta} Turkeys">−1 in ${r.eta}</span>`;
-    return `<tr class="${r.me ? "me" : ""}${r.r === 101 ? " cut" : ""}"><td class="num rk">${r.r}${arrow(r.dr)}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.gap > 0 ? "down" : r.gap < 0 ? "up" : ""}">${r.me ? "" : sgn(r.gap)}</td><td class="r num ${r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}">${k(r.last)}</td><td class="r num hide-s">${k(r.h1)}</td><td class="r">${eta}</td></tr>`;
+    return `<tr class="${r.me ? "me" : ""}${r.r === 101 ? " cut" : ""}"><td class="num rk">${r.r}${arrow(r.dr)}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num hide-s">${k(r.p)}</td><td class="r num ${r.gap > 0 ? "down" : r.gap < 0 ? "up" : ""}">${r.me ? "" : sgn(r.gap)}</td>${lastCell(r)}<td class="r num">${k(r.h1)}</td><td class="r">${eta}</td></tr>`;
   }).join("");
-  $("topBody").innerHTML = d.top20.map((r) => `<tr><td class="num rk">${r.r}${arrow(r.dr)}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td><td class="r num ${r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}">${k(r.last)}</td><td class="r num hide-s">${k(r.h1)}</td></tr>`).join("");
+  lateNote("rivalsLate", d.rivals);
+  $("topBody").innerHTML = d.top20.map((r) => `<tr><td class="num rk">${r.r}${arrow(r.dr)}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td>${lastCell(r)}<td class="r num">${k(r.h1)}</td></tr>`).join("");
+  lateNote("topLate", d.top20);
 }
 
 function svgEl(w, h, inner, label) { return `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="${esc(label)}">${inner}</svg>`; }

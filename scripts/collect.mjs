@@ -236,6 +236,33 @@ export async function main() {
     for (const by of Object.values(hist.mt.by)) for (const c of Object.keys(by)) if (+c < keep) delete by[c];
   }
   const mtFrom = hist.mt.from ?? hist.mt.since - (hist.mt.since % CYCLE) + CYCLE; // first Turkey covered
+  // A member scores at most once per Turkey, but the API sometimes shows a kill's points late, in the
+  // same update as the next kill, so one Turkey reads ~2x and the one before reads 0. When a Turkey
+  // shows at least 1.8x the member's usual points (or more than the 1,000 one player can make) right
+  // after Turkeys with nothing, spread it back evenly over those empty Turkeys. Runs every time, so
+  // stored history gets repaired too.
+  for (const [u, by] of Object.entries(hist.mt.by)) {
+    const cs = [];
+    for (let c = Math.max(mtFrom, s0 - 36 * CYCLE); c <= s0; c += CYCLE) cs.push(c);
+    for (let i = 1; i < cs.length; i++) {
+      const v = by[cs[i]] || 0;
+      if (!v) continue;
+      const prev = [];
+      for (let j = i - 1; j >= 0 && prev.length < 6; j--) if (by[cs[j]] > 0) prev.push(by[cs[j]]);
+      if (prev.length < 3) continue;
+      const typ = prev.sort((a, b) => a - b)[Math.floor(prev.length / 2)];
+      if (v < 1.8 * typ && v <= 1000) continue;
+      const gaps = [];
+      for (let j = i - 1; j >= 0 && !(by[cs[j]] > 0) && gaps.length < 3; j--) gaps.push(cs[j]);
+      const k = Math.min(gaps.length + 1, Math.max(Math.round(v / typ), Math.ceil(v / 1000)));
+      if (k < 2) continue;
+      const share = Math.round(v / k);
+      by[cs[i]] = v - share * (k - 1);
+      for (const c of gaps.slice(0, k - 1)) by[c] = share;
+      (hist.mt.fixed ||= []).push({ u: +u, c: cs[i], v, k, t: now });
+      if (hist.mt.fixed.length > 50) hist.mt.fixed.shift();
+    }
+  }
   const exact = (uid, c) => (c >= mtFrom ? (hist.mt.by[uid]?.[c] || 0) : undefined);
   if (hist.cycles.length > MAX_CYCLES) hist.cycles = hist.cycles.slice(-MAX_CYCLES);
   const cycles = hist.cycles;
