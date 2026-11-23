@@ -37,6 +37,7 @@ async function quietScanDirect() {
   const out = new Map();
   let cursor = "", complete = false;
   for (let page = 0; page < 10; page++) {
+    if (page) await sleep(1000); // Roblox rate limits quick bursts
     let r = null;
     for (let tryN = 0; tryN < 2 && !r; tryN++) {
       try {

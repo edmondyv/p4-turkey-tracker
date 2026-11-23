@@ -84,22 +84,22 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* Each dot is coloured by its 1-hour pace against ours (warm = gaining on us, grey = slower).
    Only teams gaining on us get a trail, behind them, so a trail always means "moving up on us".
    Depth: teams that cross us before the end at this pace are bigger and in front; the rest recede. */
-.dot{--c:var(--lilac);--g:transparent;background:var(--c);box-shadow:0 0 var(--gl,0) var(--g);opacity:.75}
+.dot{--c:var(--lilac);--g:transparent;background:var(--deep);border:2px solid var(--c)!important;opacity:.75}
 .dot:before{content:"";position:absolute;top:50%;height:3px;margin-top:-1.5px;width:var(--tl,0);border-radius:2px}
-.dot.v2{--c:#ff8a3d;--g:rgba(255,138,61,.75);--gl:11px;opacity:1}
-.dot.v1{--c:#ffe45c;--g:rgba(255,228,92,.6);--gl:8px;opacity:1}
+.dot.v2{--c:#ff8a3d;--g:rgba(255,138,61,.75);opacity:1}
+.dot.v1{--c:#ffe45c;--g:rgba(255,228,92,.6);opacity:1}
 .dot.v0{--c:#c9a6ec;opacity:.9}
 .dot.vm1{--c:#8d8297;opacity:.5}
 .dot.vm2{--c:#625a6b;opacity:.38}
 .dot.v2:before,.dot.v1:before{right:100%;background:linear-gradient(90deg,transparent,var(--c))}
-.dot.near{width:14px;height:14px;margin-left:-7px;margin-top:-2px;z-index:4;opacity:1;border-width:2px;outline:2px solid var(--c);outline-offset:2px}
-.dot.near.thr{outline-color:#ff8a3d}
-.dot.near.tgt{outline-color:var(--leaf)}
+/* filled = crosses us before the end at this pace (a team behind that passes us, or one ahead we pass) */
+.dot.near{width:13px;height:13px;margin-left:-6.5px;margin-top:-1.5px;z-index:4;opacity:1;background:var(--c);border-color:var(--deep)!important;box-shadow:0 0 10px var(--g)}
 .dot.far{transform:scale(.8)}
 .trk-key{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin:10px 4px 0;font-size:11.5px;color:var(--mute);font-weight:600}
 .trk-key span{display:inline-flex;align-items:center;gap:5px}
 .trk-key i{width:8px;height:8px;border-radius:50%;background:var(--c)}
-.trk-key .ring{width:9px;height:9px;background:transparent;outline:2px solid var(--c);outline-offset:1px}
+.trk-key .hol{background:var(--deep);border:2px solid var(--mute);width:9px;height:9px;box-sizing:border-box}
+.trk-key .ful{background:var(--mute);width:9px;height:9px}
 .trk-note{margin:6px 4px 0;font-size:12px;color:var(--mute);font-weight:600}
 .trk-note b{color:var(--ink)}
 .token{position:absolute;top:2px;margin-left:-17px;width:34px;height:34px;border-radius:50%;z-index:5;transition:left 1.1s cubic-bezier(.2,.9,.25,1.15);
@@ -417,7 +417,7 @@ footer a{color:var(--mute)}
         <div class="prize" id="prize"><div class="medal h">H</div><div><b>–</b><small>Current reward</small></div></div>
       </div>
       <div class="track" id="track" aria-hidden="true"><div class="lane"></div></div>
-      <div class="trk-key" id="trkKey" hidden><span style="--c:#ff8a3d"><i></i>much faster</span><span style="--c:#ffe45c"><i></i>faster</span><span style="--c:#c9a6ec"><i></i>same pace</span><span style="--c:#8d8297"><i></i>slower</span><span style="--c:#ff8a3d"><i class="ring"></i>passes us before the end</span><span style="--c:#7ccb4e"><i class="ring"></i>we pass them before the end</span></div>
+      <div class="trk-key" id="trkKey" hidden><span style="--c:#ff8a3d"><i></i>much faster</span><span style="--c:#ffe45c"><i></i>faster</span><span style="--c:#c9a6ec"><i></i>same pace</span><span style="--c:#8d8297"><i></i>slower</span><span><i class="ful"></i>filled: crosses us before the end</span><span><i class="hol"></i>hollow: doesn't</span></div>
       
       <div class="ladder" id="ladder" aria-label="Rewards by place"></div>
     </section>
@@ -646,7 +646,7 @@ function renderHero(d) {
     const dv = rel(t), b = band(dv), near = crosses(t), tl = dv == null || dv <= 150 ? 0 : Math.round(Math.min(34, 5 + (dv / 800) * 29)); // trails only on teams gaining on us
     const eta = near ? Math.ceil(Math.abs(t.p - p.p) / Math.abs(dv)) : null;
     const tip = `#${t.r} ${esc(t.n)}, ${full(t.p)}${t.h1 != null ? `, ${full(t.h1)} per Turkey over the last hour (${dv >= 0 ? "+" : ""}${full(dv)} vs us)` : ""}${eta ? (t.p < p.p ? `, passes us in about ${eta} Turkeys` : `, we pass them in about ${eta} Turkeys`) : ""}`;
-    html += `<div class="dot ${b}${near ? " near" + (t.p > p.p ? " tgt" : " thr") : b === "vm2" ? " far" : ""}" title="${tip}" style="left:${firstPaint ? 0 : x(t.p)}%;top:${59 + [0, -18, 18, -9, 9][i % 5]}px;--tl:${tl}px" data-x="${x(t.p)}"></div>`;
+    html += `<div class="dot ${b}${near ? " near" : b === "vm2" ? " far" : ""}" title="${tip}" style="left:${firstPaint ? 0 : x(t.p)}%;top:${59 + [0, -18, 18, -9, 9][i % 5]}px;--tl:${tl}px" data-x="${x(t.p)}"></div>`;
   });
   $("trkKey").hidden = myH1 == null;
   if (c100) html += `<div class="fin" style="left:${x(c100.p)}%"><span style="${x(c100.p) > 70 ? "left:auto;right:6px" : ""}">Titanic line #100</span></div>`;
