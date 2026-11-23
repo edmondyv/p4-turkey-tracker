@@ -568,7 +568,7 @@ export async function main() {
   const scan = live ? await quietScan() : null;
   if (scan) {
     // after a long gap we can't know what happened in between, so restart the tracking
-    if (hist.srvAt && now - hist.srvAt > 3600) { hist.srv = {}; hist.srvFrom = now; }
+    if ((hist.srvAt && now - hist.srvAt > 3600) || hist.srvV !== 2) { hist.srv = {}; hist.srvFrom = now; hist.srvV = 2; }
     hist.srv ||= {};
     hist.srvFrom ||= now;
     for (const [id, x] of scan.servers) {
