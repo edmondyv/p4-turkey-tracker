@@ -135,6 +135,25 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mem small.lt{color:var(--mute)} .mem small.lt b{color:var(--ink);display:inline;font-weight:700} .mem small.lt b.hiv{color:#8fe3f5} .mem small.lt b.up{color:var(--leaf)}
 .mem .p small{font:600 11px var(--text)}
 
+/* alt timer */
+.alt{background:var(--card2);border-radius:var(--r-chip);padding:10px;margin-top:10px}
+.alt-h{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap;margin-bottom:8px}
+.alt-h h3{font-size:14px} .alt-h span{font-size:12px}
+.alt-in{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+@media (max-width:440px){.alt-in{grid-template-columns:1fr 1fr}}
+.alt-in label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;font-weight:600;color:var(--mute);min-width:0}
+.alt-in .f{display:flex;align-items:center;gap:4px;background:var(--deep);border:2px solid var(--line);border-radius:10px;padding:0 8px;transition:border-color .15s}
+.alt-in .f:focus-within{border-color:var(--caramel)}
+.alt-in input{width:100%;min-width:0;border:0;background:none;color:var(--ink);font:600 16px var(--display);padding:6px 0;outline:none}
+.alt-in .f i{font-style:normal;color:var(--dim);font-weight:700;font-size:12px}
+.alt-out{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
+.alt-out>div{background:var(--deep);border:2px solid transparent;border-radius:12px;padding:7px 8px;min-width:0}
+.alt-out>div.pick{border-color:var(--leaf)}
+.alt-out small{display:block;font-size:11px;color:var(--mute);font-weight:600;line-height:1.3}
+.alt-out b{display:block;font:600 21px/1.15 var(--display);margin:1px 0}
+.alt-out b.w{font-size:15px;line-height:1.5}
+.alt-note{font-size:12px;margin-top:7px;color:var(--mute)}
+
 /* clock */
 .clock{grid-area:clock;display:flex;flex-direction:column}
 .ring{display:flex;align-items:center;gap:14px}
@@ -262,6 +281,17 @@ footer a{color:var(--mute)}
     <section class="card squad" aria-label="Squad">
       <header><h2>Squad</h2><span class="mute" id="squadNote">Checked on every Turkey</span></header>
       <div class="pairs" id="pairs"></div>
+      <div class="alt" id="altCalc">
+        <div class="alt-h"><h3>Alt timer</h3><span class="mute">Main and alt hit from the start, then the alt leaves</span></div>
+        <div class="alt-in">
+          <label>Main DPS<span class="f"><input id="acM" inputmode="decimal" autocomplete="off" value="3.46"><i>M</i></span></label>
+          <label>Alt DPS<span class="f"><input id="acA" inputmode="decimal" autocomplete="off" value="2.43"><i>M</i></span></label>
+          <label>Timer at start<span class="f"><input id="acS" inputmode="decimal" autocomplete="off" value="20:00"></span></label>
+          <label>Turkey HP<span class="f"><input id="acH" inputmode="decimal" autocomplete="off" value="3.5"><i>B</i></span></label>
+        </div>
+        <div class="alt-out" id="acOut" aria-live="polite"></div>
+        <div class="alt-note" id="acNote"></div>
+      </div>
     </section>
 
     <section class="card clock" aria-label="Turkey clock">
@@ -544,6 +574,41 @@ async function load() {
 }
 async function loadPresence() { try { const r = await fetch("/api/status", { cache: "no-store" }); if (r.ok) { P = await r.json(); if (D) renderSquad(D); } } catch (e) {} }
 load(); loadPresence(); setInterval(load, 60000); setInterval(loadPresence, 60000);
+
+// ---------- alt timer: when should the alt leave so the main keeps the biggest share?
+// Points are split by damage, so every second the alt hits costs the main. Both hit from the
+// start; the alt stays just long enough for the Turkey to die with the chosen time to spare.
+const AC = ["acM", "acA", "acS", "acH"];
+const numIn = (v, big, unit) => { const x = parseFloat(String(v).replace(",", ".").replace(/[^0-9.]/g, "")); return isFinite(x) && x > 0 ? (x >= big ? x : x * unit) : null; };
+const timeIn = (v) => {
+  const s = String(v).trim().replace(",", "."), m = s.match(/^(\d{1,2})\s*[:.h]\s*(\d{2})$/);
+  if (m) return +m[2] < 60 ? +m[1] * 60 + +m[2] : null;
+  const x = parseFloat(s); return isFinite(x) && x > 0 ? Math.round(x * 60) : null;
+};
+const mmss = (t) => { t = Math.max(0, Math.round(t)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+function altCalc() {
+  const M = numIn($("acM").value, 1e5, 1e6), A = numIn($("acA").value, 1e5, 1e6), S = timeIn($("acS").value), H = numIn($("acH").value, 1e6, 1e9);
+  try { localStorage.setItem("p4.altcalc", JSON.stringify(AC.map((id) => $(id).value))); } catch (e) {}
+  if (!M || !A || !S || !H) { $("acOut").innerHTML = ""; $("acNote").textContent = "Fill in both DPS values, the timer when you start hitting and the Turkey's HP."; return; }
+  const solo = H / M, both = H / (M + A), pts = (x) => Math.round(1000 * x).toLocaleString("en-US");
+  if (solo <= S - 120) {
+    $("acOut").innerHTML = `<div style="grid-column:1/-1"><b class="w">No alt needed</b><small>The main alone kills it with ${mmss(S - solo)} left and keeps the full 1,000.</small></div>`;
+    $("acNote").textContent = `Main alone needs ${mmss(solo)}. Lower "Timer at start" if you start hitting later.`;
+    return;
+  }
+  $("acOut").innerHTML = [30, 60, 120].map((m) => {
+    const F = S - m; let big, l1, l2, w = false;
+    if (solo <= F) { big = "No alt"; w = true; l1 = `Main alone: ${mmss(S - solo)} left`; l2 = "Main 1,000"; }
+    else if (both > F) { w = true; big = both <= S ? "Stay all fight" : "Too slow"; l1 = both <= S ? `Dies with ${mmss(S - both)} left` : "Won't die in time"; l2 = `Main ≈ ${pts(M / (M + A))}`; }
+    else { const t = (H - M * F) / A; big = mmss(S - t); l1 = `Main ≈ ${pts(1 - (A * t) / H)}`; l2 = `Covers a ${Math.round((100 * m) / S)}% DPS dip`; }
+    return `<div class="${m === 60 ? "pick" : ""}"><small>${m < 60 ? m + " s" : m / 60 + " min"} to spare</small><b class="num${w ? " w" : ""}">${big}</b><small>${l1}</small><small>${l2}</small></div>`;
+  }).join("");
+  $("acNote").textContent = `Big number = Turkey timer when the alt stops hitting. Main alone needs ${mmss(solo)}; with the alt the whole fight it dies after ${mmss(both)} and the main gets ≈ ${pts(M / (M + A))}.`;
+}
+try { const sv = JSON.parse(localStorage.getItem("p4.altcalc") || "null"); if (Array.isArray(sv)) AC.forEach((id, i) => { if (sv[i]) $(id).value = sv[i]; }); } catch (e) {}
+AC.forEach((id) => { $(id).addEventListener("input", altCalc); });
+$("acS").addEventListener("blur", () => { const s = timeIn($("acS").value); if (s) { $("acS").value = mmss(s); altCalc(); } });
+altCalc();
 </script>
 </body>
 </html>
