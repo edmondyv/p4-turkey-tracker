@@ -150,7 +150,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .solo-g{display:grid;gap:12px;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,.85fr)}
 .so-col{display:grid;gap:12px;align-content:start;min-width:0}
 .solo-g>.so-box{align-self:start}
-@media (max-width:1080px){.solo-g{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .so-board{grid-column:1/-1}}
+@media (max-width:1080px){.solo-g{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .so-col3{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:680px){.so-col3{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:680px){.solo-g{grid-template-columns:minmax(0,1fr)}}
 .so-box{background:var(--card2);border-radius:16px;padding:12px;min-width:0}
 .so-lbl{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;font-weight:700;color:var(--mute);margin:0 0 7px}
@@ -236,6 +237,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 .so-pb i.in{background:var(--leaf)}
 .so-p small{font-size:11px;color:var(--dim);font-weight:700}
 .so-foot{font-size:11px;color:var(--dim);margin-top:6px}
+.qs{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 8px;align-items:center;padding:7px 0;border-top:1px solid rgba(255,241,224,.07)}
+.qs b{font:600 15px var(--display)} .qs small{display:block;font-size:11px;color:var(--dim);font-weight:700}
+.qs a,.qs button{border:2px solid var(--line);background:var(--deep);border-radius:999px;padding:4px 10px;font-weight:800;font-size:12px;color:var(--ink);text-decoration:none;white-space:nowrap}
+.qs a{border-color:var(--leaf);color:var(--leaf);background:rgba(124,203,78,.12)}
+.qs.long b{color:var(--leaf)}
 @media (prefers-reduced-motion:reduce){.apple.tap,.apple.spin,.solo.reveal{animation:none}}
 
 /* alt timer */
@@ -510,11 +516,14 @@ footer a{color:var(--mute)}
         <table class="tt" id="soTab"></table>
         <p class="so-notes" id="soNotes"></p>
       </div>
-      <div class="so-box so-board" id="soBoard"></div>
+      <div class="so-col so-col3">
+        <div class="so-box so-board" id="soBoard"></div>
+        <div class="so-box" id="soQuiet"></div>
+      </div>
     </div>
   </section>
 
-  <footer><span id="foot">Data from BIG Games' public API, collected every 5 minutes.</span><span>Turkeys land at :00, :20 and :40.</span></footer>
+  <footer><span id="foot">Data from BIG Games' public API, collected every 5 minutes.</span><span id="landFoot">Turkeys land every 20 minutes.</span></footer>
 </div>
 
 <script>
@@ -522,7 +531,8 @@ const qs = new URLSearchParams(location.search);
 const DATA_URL = qs.get("data") || "https://raw.githubusercontent.com/edmondyv/p4-turkey-tracker/data/dashboard.json";
 const NTFY_TOPIC = "";
 const PAIRS = [[216657469, 3083204118], [6079067379, 677658744]];
-const CYCLE = 1200, UP = 900, TZ = "Europe/Brussels";
+const CYCLE = 1200, UP = 900;
+const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Brussels"; } catch (e) { return "Europe/Brussels"; } })(); // each viewer's own time zone
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const k = (n, d = 1) => n == null ? "–" : Math.abs(n) >= 1e6 ? (n / 1e6).toFixed(2) + "M" : Math.abs(n) >= 1e4 ? (n / 1e3).toFixed(d) + "k" : Math.abs(n) >= 1e3 ? (n / 1e3).toFixed(2) + "k" : String(Math.round(n));
@@ -725,7 +735,7 @@ $("dsAhead").onclick = () => { distMode = "ahead"; $("dsAhead").setAttribute("ar
 $("dsTop").onclick = () => { distMode = "top"; $("dsTop").setAttribute("aria-pressed", "true"); $("dsAhead").setAttribute("aria-pressed", "false"); if (D) renderDist(D); };
 function renderSide(d) {
   const log = d.log || [];
-  $("log").innerHTML = log.length ? log.slice(0, 4).map((e) => `<li><time>${hm(e.t)}</time><span class="${e.kind}">${esc(e.text)}</span></li>`).join("") : '<li><time></time><span class="mute">No alerts. Everyone scored on every Turkey so far.</span></li>';
+  $("log").innerHTML = log.length ? log.slice(0, 4).map((e) => `<li><time>${hm(e.t)}</time><span class="${e.kind}">${esc(e.text).replace(/\{\{t:(\d+)\}\}/g, (_, t) => hm(+t))}</span></li>`).join("") : '<li><time></time><span class="mute">No alerts. Everyone scored on every Turkey so far.</span></li>';
   $("ntfyNote").textContent = NTFY_TOPIC ? "Phone alerts on ntfy: " + NTFY_TOPIC : "";
   const c = d.catches;
   if (!c) { $("catches").innerHTML = '<div class="empty">No live catches board.</div>'; return; }
@@ -737,7 +747,7 @@ function renderSide(d) {
 
 function render() {
   if (!D || !D.p4) return;
-  renderHero(D); renderSquad(D); renderPace(D); renderTables(D); renderChart(D); renderDist(D); renderSide(D); soBoard(D); soPlan(D); if (!$("solo").hidden) soRender(true); tick();
+  renderHero(D); renderSquad(D); renderPace(D); renderTables(D); renderChart(D); renderDist(D); renderSide(D); soBoard(D); soPlan(D); soQuiet(D); landFoot(); if (!$("solo").hidden) soRender(true); tick();
   $("upd").innerHTML = `<span class="hide-xs">Updated </span>${hm(D.updatedAt)}`;
   $("foot").textContent = `Data from BIG Games' public API, last snapshot ${ago(D.updatedAt)}.${D.ref ? ` Per-Turkey numbers use the snapshot of ${hm(D.ref.takenAt)}, taken while no Turkey was up.` : ""}`;
   firstPaint = false;
@@ -819,6 +829,21 @@ function soBoard(d) {
         <div class="so-pb"><i class="${gap != null && gap <= 0 ? "in" : ""}" style="width:${w * 100}%"></i></div><small>${gap == null ? "Not in the listed top " + full(c.listSize || 10000) + " yet" : gap <= 0 ? "In the Titanic zone" : full(gap) + " points to go"}</small></div>`;
     }).join("") + `<div class="so-foot">The board refreshes every 3 to 5 minutes, and a catch can take up to 10 minutes to show.</div>`;
 }
+const durTxt = (s) => { const m = Math.floor(s / 60); return m < 5 ? "under 5 min" : m < 60 ? m + " min" : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}`; };
+function soQuiet(d) {
+  const el = $("soQuiet"), q = d && d.quiet;
+  if (!el || $("solo").hidden) return;
+  if (!q || !q.top || !q.top.length) { el.innerHTML = '<div class="so-lbl">Quiet servers</div><div class="empty">No scan yet. The list fills in within 5 minutes.</div>'; return; }
+  const nowS = Date.now() / 1000;
+  el.innerHTML = `<div class="so-lbl">Quiet servers<span>${full(q.total)} PS99 servers at 1 player</span></div>` +
+    q.top.map((x) => { const dur = q.at - x.since; return `<div class="qs${dur >= 3 * 3600 ? " long" : ""}"><div><b class="num">${durTxt(dur)}</b><small>at ${x.p} player${x.p === 1 ? "" : "s"} since ${hm(x.since)}${x.ping ? `, their ping ${x.ping} ms` : ""}</small></div>
+      <button type="button" data-copy="${esc(x.id)}">Copy ID</button><a href="roblox://experiences/start?placeId=${q.placeId}&gameInstanceId=${encodeURIComponent(x.id)}">Join</a></div>`; }).join("") +
+    `<p class="so-notes">Longest first: how long each server has stayed at 1 player or fewer, tracked since ${hm(q.tracking)} and checked every 5 minutes. A long time suggests Roblox rarely sends players there, but it's still public: a stranger who hits your Turkey takes part of the 1,000. Copy ID gives the server's job ID for an account manager. Updated ${Math.max(0, Math.round((nowS - q.at) / 60))} min ago.</p>`;
+}
+function landFoot() { // landing minutes in the viewer's time zone (zones with a :30 or :45 offset differ)
+  const s0 = Math.floor(Date.now() / 1000 / CYCLE) * CYCLE, m = new Date(s0 * 1000).getMinutes() % 20;
+  $("landFoot").textContent = `Turkeys land at ${[m, m + 20, m + 40].map((x) => ":" + String(x).padStart(2, "0")).join(", ").replace(/, ([^,]*)$/, " and $1")}, your time.`;
+}
 function soPlan(d) {
   if ($("solo").hidden) return;
   const c = d && d.catches, h = soHours(), left = soLeftH(), rate = soRateH();
@@ -842,6 +867,7 @@ function soPlan(d) {
 }
 $("solo").addEventListener("click", (e) => {
   const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.copy) { const id = t.dataset.copy; (navigator.clipboard ? navigator.clipboard.writeText(id) : Promise.reject()).then(() => { t.textContent = "Copied"; setTimeout(() => (t.textContent = "Copy ID"), 1500); }, () => prompt("Server job ID", id)); return; }
   if (t.dataset.th) so.th = t.dataset.th;
   if (t.dataset.me) so.me = +t.dataset.me;
   if (t.dataset.tg) so.tg = +t.dataset.tg;
@@ -861,7 +887,7 @@ function setSolo(on, fromTap) {
   const s = $("solo"); s.hidden = !on;
   try { on ? localStorage.setItem("p4.solo", "1") : localStorage.removeItem("p4.solo"); } catch (e) {}
   if (!on) return;
-  soRender(); soBoard(D); soPlan(D);
+  soRender(); soBoard(D); soPlan(D); soQuiet(D);
   if (fromTap) {
     s.classList.remove("reveal"); void s.offsetWidth; s.classList.add("reveal");
     s.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });

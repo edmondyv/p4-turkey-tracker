@@ -31,6 +31,26 @@ const quant = (a, f) => {
 const diff = (a, b) => (a == null || b == null ? null : a - b);
 const round = (x) => (x == null || !isFinite(x) ? null : Math.round(x));
 
+// PS99's public server list from Roblox, emptiest first: every server with at most 1 player
+const PLACE_ID = 8737899170;
+async function quietScan() {
+  const out = new Map();
+  let cursor = "", complete = false;
+  for (let page = 0; page < 10; page++) {
+    let r = null;
+    try {
+      const res = await fetch(`https://games.roblox.com/v1/games/${PLACE_ID}/servers/Public?sortOrder=Asc&limit=100${cursor ? "&cursor=" + encodeURIComponent(cursor) : ""}`, { headers: { "User-Agent": "p4-turkey-tracker/2.0 (github actions)" } });
+      if (res.ok) r = await res.json();
+    } catch {}
+    if (!r || !Array.isArray(r.data)) return null; // rate limited or down: keep what we know
+    for (const x of r.data) if (x.playing <= 1) out.set(x.id, { p: x.playing, max: x.maxPlayers, ping: x.ping });
+    const lastP = r.data.length ? r.data[r.data.length - 1].playing : 99;
+    if (lastP > 1 || !r.nextPageCursor) { complete = true; break; }
+    cursor = r.nextPageCursor;
+  }
+  return { servers: out, complete };
+}
+
 async function api(p, tries = 3) {
   for (let i = 0; i < tries; i++) {
     try {
@@ -406,13 +426,17 @@ export async function main() {
       const due = s === 1 || s === 3 || (s > 3 && (s - 3) % 9 === 0);
       if (live && s > 0 && due && st.notified !== s) {
         const partner = PAIRS.find((p) => p.includes(mb.uid))?.find((u) => u !== mb.uid);
-        const last = mb.lastAt ? hhmm(mb.lastAt) : "?";
-        let text = s === 1
-          ? `${mb.name} didn't score on the ${hhmm(checkS)} Turkey (last points ${last}).`
-          : `${mb.name} has missed ${s} Turkeys in a row (last points ${last}).`;
-        if (s === 1 && partner) text += downNow.has(partner) ? ` ${SQUAD[partner]} is down too: the whole pair is out.` : ` ${SQUAD[partner]} can't kill alone.`;
-        lines.push(text);
-        hist.log.unshift({ t: now, kind: "down", uid: mb.uid, text });
+        // the alert uses Brussels time; the site log gets {{t:…}} tokens shown in each viewer's time zone
+        const msg = (fmt) => {
+          const last = mb.lastAt ? fmt(mb.lastAt) : "?";
+          let t = s === 1
+            ? `${mb.name} didn't score on the ${fmt(checkS)} Turkey (last points ${last}).`
+            : `${mb.name} has missed ${s} Turkeys in a row (last points ${last}).`;
+          if (s === 1 && partner) t += downNow.has(partner) ? ` ${SQUAD[partner]} is down too: the whole pair is out.` : ` ${SQUAD[partner]} can't kill alone.`;
+          return t;
+        };
+        lines.push(msg(hhmm));
+        hist.log.unshift({ t: now, kind: "down", uid: mb.uid, text: msg((t) => `{{t:${t}}}`) });
         st.notified = s;
       }
       if (s === 0 && st.notified > 0) {
@@ -519,13 +543,32 @@ export async function main() {
     };
   }
 
+  // ---------- quiet servers: how long each public server has stayed at 1 player or fewer
+  let quiet = null;
+  const scan = live ? await quietScan() : null;
+  if (scan) {
+    hist.srv ||= {};
+    hist.srvFrom ||= now;
+    for (const [id, x] of scan.servers) {
+      const o = (hist.srv[id] ||= { since: now });
+      o.last = now; o.p = x.p; o.max = x.max; o.ping = x.ping;
+    }
+    for (const [id, o] of Object.entries(hist.srv)) {
+      // a full scan lists every server with <= 1 player, so one that's missing went above 1 or closed
+      if (o.last !== now && (scan.complete || now - o.last > 3600)) delete hist.srv[id];
+    }
+    const list = Object.entries(hist.srv).filter(([, o]) => o.last === now).sort((a, b) => a[1].since - b[1].since);
+    quiet = { at: now, placeId: PLACE_ID, total: scan.servers.size, complete: scan.complete, tracking: hist.srvFrom,
+      top: list.slice(0, 15).map(([id, o]) => ({ id, since: o.since, p: o.p, max: o.max, ping: o.ping })) };
+  }
+
   const dashboard = {
     v: 2, updatedAt: now, league: LEAGUE, cycleSec: CYCLE,
     season: { id: season.id, title: season.title, state: season.state, start: startTime, finish: season.finishTime, turkeysElapsed, turkeysLeft, totalLeagues, bands: season.placementRewards || [], petIcons: hist.petIcons || {} },
     p4: p4out, marks, rivals, track,
     top20: rows.slice(0, 20).map(enrich),
     dist: { last: dist(1), h1: dist(3), aheadLast: dist(1, ahead), aheadH1: dist(3, ahead), aheadN: ahead.length },
-    series, catches, log: hist.log.slice(0, 12),
+    series, catches, quiet, log: hist.log.slice(0, 12),
     ref: cycles.length ? { boundary: lastS, takenAt: cycles[cycles.length - 1].t, lastTurkeyAt: cycles.length > 1 ? lastS - CYCLE : null, rankSince: refRec ? refS : null } : null,
   };
 
