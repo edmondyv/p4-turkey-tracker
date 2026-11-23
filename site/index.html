@@ -88,17 +88,18 @@ button{font:inherit;color:inherit;cursor:pointer}
 .dot:before{content:"";position:absolute;top:50%;height:3px;margin-top:-1.5px;width:var(--tl,0);border-radius:2px}
 .dot.v2{--c:#ff8a3d;--g:rgba(255,138,61,.75);--gl:11px;opacity:1}
 .dot.v1{--c:#ffe45c;--g:rgba(255,228,92,.6);--gl:8px;opacity:1}
-.dot.v0{--c:#b58fd6;opacity:.7}
-.dot.vm1{--c:#7fa8d9;opacity:.6}
-.dot.vm2{--c:#5d7aa6;opacity:.45}
+.dot.v0{--c:#c9a6ec;opacity:.9}
+.dot.vm1{--c:#8d8297;opacity:.5}
+.dot.vm2{--c:#625a6b;opacity:.38}
 .dot.v2:before,.dot.v1:before{right:100%;background:linear-gradient(90deg,transparent,var(--c))}
-.dot.vm1:before,.dot.vm2:before{left:100%;background:linear-gradient(90deg,var(--c),transparent);opacity:.7}
-.dot.near{width:14px;height:14px;margin-left:-7px;margin-top:-2px;z-index:2;opacity:1;border-width:2px;outline:2px solid var(--c);outline-offset:2px}
+.dot.vm1:before,.dot.vm2:before{left:100%;background:linear-gradient(90deg,var(--c),transparent);opacity:.55}
+.dot.near{width:14px;height:14px;margin-left:-7px;margin-top:-2px;z-index:4;opacity:1;border-width:2px;outline:2px solid var(--c);outline-offset:2px}
+.dot.near.tgt{outline-color:var(--leaf);--c:#b3a9bd}
 .dot.far{transform:scale(.8)}
 .trk-key{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin:10px 4px 0;font-size:11.5px;color:var(--mute);font-weight:600}
 .trk-key span{display:inline-flex;align-items:center;gap:5px}
 .trk-key i{width:8px;height:8px;border-radius:50%;background:var(--c)}
-.trk-key .ring{width:9px;height:9px;background:transparent;outline:2px solid var(--mute);outline-offset:1px}
+.trk-key .ring{width:9px;height:9px;background:transparent;outline:2px solid var(--c);outline-offset:1px}
 .trk-note{margin:6px 4px 0;font-size:12px;color:var(--mute);font-weight:600}
 .trk-note b{color:var(--ink)}
 .token{position:absolute;top:22px;margin-left:-20px;width:40px;height:40px;border-radius:50%;z-index:3;transition:left 1.1s cubic-bezier(.2,.9,.25,1.15);
@@ -413,7 +414,7 @@ footer a{color:var(--mute)}
         <div class="prize" id="prize"><div class="medal h">H</div><div><b>–</b><small>Current reward</small></div></div>
       </div>
       <div class="track" id="track" aria-hidden="true"><div class="lane"></div></div>
-      <div class="trk-key" id="trkKey" hidden><span style="--c:#ff8a3d"><i></i>much faster</span><span style="--c:#ffe45c"><i></i>faster</span><span style="--c:#b58fd6"><i></i>same pace</span><span style="--c:#7fa8d9"><i></i>slower</span><span style="--c:#5d7aa6"><i></i>much slower</span><span><i class="ring"></i>crosses us before the end</span></div>
+      <div class="trk-key" id="trkKey" hidden><span style="--c:#ff8a3d"><i></i>much faster</span><span style="--c:#ffe45c"><i></i>faster</span><span style="--c:#c9a6ec"><i></i>same pace</span><span style="--c:#8d8297"><i></i>slower</span><span style="--c:#ff8a3d"><i class="ring"></i>passes us before the end</span><span style="--c:#7ccb4e"><i class="ring"></i>we pass them before the end</span></div>
       <div class="trk-note" id="trkNote" hidden></div>
       <div class="ladder" id="ladder" aria-label="Rewards by place"></div>
     </section>
@@ -642,7 +643,7 @@ function renderHero(d) {
     const dv = rel(t), b = band(dv), near = crosses(t), tl = dv == null || Math.abs(dv) <= 50 ? 0 : Math.round(Math.min(34, 5 + (Math.abs(dv) / 800) * 29));
     const eta = near ? Math.ceil(Math.abs(t.p - p.p) / Math.abs(dv)) : null;
     const tip = `#${t.r} ${esc(t.n)}, ${full(t.p)}${t.h1 != null ? `, ${full(t.h1)} per Turkey over the last hour (${dv >= 0 ? "+" : ""}${full(dv)} vs us)` : ""}${eta ? (t.p < p.p ? `, passes us in about ${eta} Turkeys` : `, we pass them in about ${eta} Turkeys`) : ""}`;
-    html += `<div class="dot ${b}${near ? " near" : b === "vm2" ? " far" : ""}" title="${tip}" style="left:${firstPaint ? 0 : x(t.p)}%;top:${42 + [0, -18, 18, -9, 9][i % 5] + 3}px;--tl:${tl}px" data-x="${x(t.p)}"></div>`;
+    html += `<div class="dot ${b}${near ? " near" + (t.p > p.p ? " tgt" : "") : b === "vm2" ? " far" : ""}" title="${tip}" style="left:${firstPaint ? 0 : x(t.p)}%;top:${42 + [0, -18, 18, -9, 9][i % 5] + 3}px;--tl:${tl}px" data-x="${x(t.p)}"></div>`;
   });
   const others = d.track.filter((t) => !t.me && rel(t) != null);
   const catching = others.filter((t) => t.p < p.p && rel(t) > 50), passing = catching.filter(crosses).length;
