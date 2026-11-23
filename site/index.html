@@ -212,8 +212,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .solo-g{display:grid;gap:12px;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,.85fr)}
 .so-col{display:grid;gap:12px;align-content:start;min-width:0}
 .solo-g>.so-box{align-self:start}
-@media (max-width:1080px){.solo-g{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .so-col3{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
-@media (max-width:680px){.so-col3{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1080px){.solo-g{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .so-board{grid-column:1/-1}}
 @media (max-width:680px){.solo-g{grid-template-columns:minmax(0,1fr)}}
 .so-box{background:var(--card2);border-radius:16px;padding:12px;min-width:0}
 .so-lbl{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;font-weight:700;color:var(--mute);margin:0 0 7px}
@@ -299,6 +298,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 .so-pb i.in{background:var(--leaf)}
 .so-p small{font-size:11px;color:var(--dim);font-weight:700}
 .so-foot{font-size:11px;color:var(--dim);margin-top:6px}
+.quiet{margin-top:12px}
+.qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));column-gap:18px}
+.qgrid>.stale{grid-column:1/-1}
 .qs{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 8px;align-items:center;padding:7px 0;border-top:1px solid rgba(255,241,224,.07)}
 .qs b{font:600 15px var(--display)} .qs small{display:block;font-size:11px;color:var(--dim);font-weight:700}
 .qs a,.qs button{border:2px solid var(--line);background:var(--deep);border-radius:999px;padding:4px 10px;font-weight:800;font-size:12px;color:var(--ink);text-decoration:none;white-space:nowrap}
@@ -583,11 +585,14 @@ footer{align-items:center}
         <table class="tt" id="soTab"></table>
         <p class="so-notes" id="soNotes"></p>
       </div>
-      <div class="so-col so-col3">
-        <div class="so-box so-board" id="soBoard"></div>
-        <div class="so-box" id="soQuiet"></div>
-      </div>
+      <div class="so-box so-board" id="soBoard"></div>
     </div>
+  </section>
+
+  <section class="card quiet" id="quietCard" aria-label="Quiet servers">
+    <header><h2>Quiet servers</h2><span class="mute" id="qMeta"></span></header>
+    <div class="qgrid" id="qList"></div>
+    <p class="so-notes" id="qNote"></p>
   </section>
 
   <footer><span id="foot">Data from BIG Games' public API, collected every 5 minutes.</span><span id="landFoot">Turkeys land every 20 minutes.</span>
@@ -888,7 +893,7 @@ function renderSide(d) {
 
 function render() {
   if (!D || !D.p4) return;
-  renderHero(D); renderSquad(D); renderPace(D); renderTables(D); renderChart(D); renderDist(D); renderSide(D); soBoard(D); soPlan(D); soQuiet(D); landFoot(); if (!$("solo").hidden) soRender(true); tick();
+  renderHero(D); renderSquad(D); renderPace(D); renderTables(D); renderChart(D); renderDist(D); renderSide(D); soBoard(D); soPlan(D); renderQuiet(D); landFoot(); if (!$("solo").hidden) soRender(true); tick();
   $("upd").innerHTML = `<span class="hide-xs">Updated </span>${hm(D.updatedAt)}`;
   $("foot").textContent = `Data from BIG Games' public API, last snapshot ${ago(D.updatedAt)}.${D.ref ? ` Per-Turkey numbers use the snapshot of ${hm(D.ref.takenAt)}, taken while no Turkey was up.` : ""}`;
   firstPaint = false;
@@ -971,17 +976,20 @@ function soBoard(d) {
     }).join("") + `<div class="so-foot">The board refreshes every 3 to 5 minutes, and a catch can take up to 10 minutes to show.</div>`;
 }
 const durTxt = (s) => { const m = Math.floor(s / 60); return m < 5 ? "under 5 min" : m < 60 ? m + " min" : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}`; };
-function soQuiet(d) {
-  const el = $("soQuiet"), q = d && d.quiet;
-  if (!el || $("solo").hidden) return;
-  if (!q || !q.top || !q.top.length) { el.innerHTML = '<div class="so-lbl">Quiet servers</div><div class="empty">No scan yet. The list fills in within 5 minutes.</div>'; return; }
-  const nowS = Date.now() / 1000;
-  el.innerHTML = `<div class="so-lbl">Quiet servers<span>${full(q.total)} PS99 servers at 1 player</span></div>` +
-    (q.stale ? `<p class="so-notes" style="margin:0 0 6px;color:var(--caramel2)">Roblox didn't answer the last scan. This list is from ${hm(q.at)}.</p>` : "") +
+function renderQuiet(d) {
+  const q = d && d.quiet;
+  $("qMeta").textContent = q ? `${full(q.total)} PS99 servers at 1 player` : "";
+  if (!q || !q.top || !q.top.length) { $("qList").innerHTML = '<div class="empty">No scan yet. The list fills in within 5 minutes.</div>'; $("qNote").textContent = ""; return; }
+  $("qList").innerHTML = (q.stale ? `<p class="so-notes stale" style="margin:0 0 6px;color:var(--caramel2)">Roblox didn't answer the last scan. This list is from ${hm(q.at)}.</p>` : "") +
     q.top.map((x) => { const dur = q.at - x.since; return `<div class="qs${dur >= 3 * 3600 ? " long" : ""}"><div><b class="num">${durTxt(dur)}</b><small>at ${x.p} player${x.p === 1 ? "" : "s"} since ${hm(x.since)}${x.ping ? `, their ping ${x.ping} ms` : ""}</small></div>
-      <button type="button" data-copy="${esc(x.id)}">Copy ID</button><a href="roblox://experiences/start?placeId=${q.placeId}&gameInstanceId=${encodeURIComponent(x.id)}">Join</a></div>`; }).join("") +
-    `<p class="so-notes">Longest first: how long each server has stayed at 1 player or fewer, tracked since ${hm(q.tracking)} and checked every 5 minutes. A long time suggests Roblox rarely sends players there, but it's still public: a stranger who hits your Turkey takes part of the 1,000. Copy ID gives the server's job ID for an account manager. Updated ${Math.max(0, Math.round((nowS - q.at) / 60))} min ago.</p>`;
+      <button type="button" data-copy="${esc(x.id)}">Copy ID</button><a href="roblox://experiences/start?placeId=${q.placeId}&gameInstanceId=${encodeURIComponent(x.id)}">Join</a></div>`; }).join("");
+  $("qNote").textContent = `Longest first: how long each public server has stayed at 1 player or fewer, tracked since ${hm(q.tracking)} and checked every 5 minutes. A long time suggests Roblox rarely sends players there, but anyone can still join, and a stranger who hits your Turkey takes part of the 1,000. Join opens that server in Roblox; Copy ID gives its job ID for an account manager. Updated ${Math.max(0, Math.round((Date.now() / 1000 - q.at) / 60))} min ago.`;
 }
+$("quietCard").addEventListener("click", (e) => {
+  const t = e.target.closest("button[data-copy]"); if (!t) return;
+  const id = t.dataset.copy;
+  (navigator.clipboard ? navigator.clipboard.writeText(id) : Promise.reject()).then(() => { t.textContent = "Copied"; setTimeout(() => (t.textContent = "Copy ID"), 1500); }, () => prompt("Server job ID", id));
+});
 function landFoot() { // landing minutes in the viewer's time zone (zones with a :30 or :45 offset differ)
   const s0 = Math.floor(Date.now() / 1000 / CYCLE) * CYCLE, m = new Date(s0 * 1000).getMinutes() % 20;
   $("landFoot").textContent = `Turkeys land at ${[m, m + 20, m + 40].map((x) => ":" + String(x).padStart(2, "0")).join(", ").replace(/, ([^,]*)$/, " and $1")}, your time.`;
@@ -1009,7 +1017,6 @@ function soPlan(d) {
 }
 $("solo").addEventListener("click", (e) => {
   const t = e.target.closest("button"); if (!t) return;
-  if (t.dataset.copy) { const id = t.dataset.copy; (navigator.clipboard ? navigator.clipboard.writeText(id) : Promise.reject()).then(() => { t.textContent = "Copied"; setTimeout(() => (t.textContent = "Copy ID"), 1500); }, () => prompt("Server job ID", id)); return; }
   if (t.dataset.th) so.th = t.dataset.th;
   if (t.dataset.me) so.me = +t.dataset.me;
   if (t.dataset.tg) so.tg = +t.dataset.tg;
@@ -1029,7 +1036,7 @@ function setSolo(on, fromTap) {
   const s = $("solo"); s.hidden = !on;
   try { on ? localStorage.setItem("p4.solo", "1") : localStorage.removeItem("p4.solo"); } catch (e) {}
   if (!on) return;
-  soRender(); soBoard(D); soPlan(D); soQuiet(D);
+  soRender(); soBoard(D); soPlan(D);
   if (fromTap) {
     s.classList.remove("reveal"); void s.offsetWidth; s.classList.add("reveal");
     s.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
