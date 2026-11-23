@@ -139,8 +139,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .alt{background:var(--card2);border-radius:var(--r-chip);padding:10px;margin-top:10px}
 .alt-h{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap;margin-bottom:8px}
 .alt-h h3{font-size:14px} .alt-h span{font-size:12px}
-.alt-in{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-@media (max-width:440px){.alt-in{grid-template-columns:1fr 1fr}}
+.alt-in{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .alt-in label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;font-weight:600;color:var(--mute);min-width:0}
 .alt-in .f{display:flex;align-items:center;gap:4px;background:var(--deep);border:2px solid var(--line);border-radius:10px;padding:0 8px;transition:border-color .15s}
 .alt-in .f:focus-within{border-color:var(--caramel)}
@@ -282,12 +281,10 @@ footer a{color:var(--mute)}
       <header><h2>Squad</h2><span class="mute" id="squadNote">Checked on every Turkey</span></header>
       <div class="pairs" id="pairs"></div>
       <div class="alt" id="altCalc">
-        <div class="alt-h"><h3>Alt timer</h3><span class="mute">Main and alt hit from the start, then the alt leaves</span></div>
+        <div class="alt-h"><h3>Alt timer</h3><span class="mute">Turkey: 3.5B HP, alive 15:00. Both hit from the start.</span></div>
         <div class="alt-in">
           <label>Main DPS<span class="f"><input id="acM" inputmode="decimal" autocomplete="off" value="3.46"><i>M</i></span></label>
           <label>Alt DPS<span class="f"><input id="acA" inputmode="decimal" autocomplete="off" value="2.43"><i>M</i></span></label>
-          <label>Timer at start<span class="f"><input id="acS" inputmode="decimal" autocomplete="off" value="15:00"></span></label>
-          <label>Turkey HP<span class="f"><input id="acH" inputmode="decimal" autocomplete="off" value="3.5"><i>B</i></span></label>
         </div>
         <div class="alt-out" id="acOut" aria-live="polite"></div>
         <div class="alt-note" id="acNote"></div>
@@ -578,22 +575,17 @@ load(); loadPresence(); setInterval(load, 60000); setInterval(loadPresence, 6000
 // ---------- alt timer: when should the alt leave so the main keeps the biggest share?
 // Points are split by damage, so every second the alt hits costs the main. Both hit from the
 // start; the alt stays just long enough for the Turkey to die with the chosen time to spare.
-const AC = ["acM", "acA", "acS", "acH"];
+const AC = ["acM", "acA"], TURKEY_HP = 3.5e9, TURKEY_LIFE = 900;
 const numIn = (v, big, unit) => { const x = parseFloat(String(v).replace(",", ".").replace(/[^0-9.]/g, "")); return isFinite(x) && x > 0 ? (x >= big ? x : x * unit) : null; };
-const timeIn = (v) => {
-  const s = String(v).trim().replace(",", "."), m = s.match(/^(\d{1,2})\s*[:.h]\s*(\d{2})$/);
-  if (m) return +m[2] < 60 ? +m[1] * 60 + +m[2] : null;
-  const x = parseFloat(s); return isFinite(x) && x > 0 ? Math.round(x * 60) : null;
-};
 const mmss = (t) => { t = Math.max(0, Math.round(t)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
 function altCalc() {
-  const M = numIn($("acM").value, 1e5, 1e6), A = numIn($("acA").value, 1e5, 1e6), S = timeIn($("acS").value), H = numIn($("acH").value, 1e6, 1e9);
+  const M = numIn($("acM").value, 1e5, 1e6), A = numIn($("acA").value, 1e5, 1e6), S = TURKEY_LIFE, H = TURKEY_HP;
   try { localStorage.setItem("p4.altcalc2", JSON.stringify(AC.map((id) => $(id).value))); } catch (e) {}
-  if (!M || !A || !S || !H) { $("acOut").innerHTML = ""; $("acNote").textContent = "Fill in both DPS values, the timer when you start hitting and the Turkey's HP."; return; }
+  if (!M || !A || !S || !H) { $("acOut").innerHTML = ""; $("acNote").textContent = "Fill in both DPS values."; return; }
   const solo = H / M, both = H / (M + A), pts = (x) => Math.round(1000 * x).toLocaleString("en-US");
   if (solo <= S - 120) {
     $("acOut").innerHTML = `<div style="grid-column:1/-1"><b class="w">No alt needed</b><small>The main alone kills it with ${mmss(S - solo)} left and keeps the full 1,000.</small></div>`;
-    $("acNote").textContent = `Main alone needs ${mmss(solo)}. Lower "Timer at start" if you start hitting later.`;
+    $("acNote").textContent = `Main alone needs ${mmss(solo)}.`;
     return;
   }
   $("acOut").innerHTML = [30, 60, 120].map((m) => {
@@ -607,7 +599,6 @@ function altCalc() {
 }
 try { const sv = JSON.parse(localStorage.getItem("p4.altcalc2") || "null"); if (Array.isArray(sv)) AC.forEach((id, i) => { if (sv[i]) $(id).value = sv[i]; }); } catch (e) {}
 AC.forEach((id) => { $(id).addEventListener("input", altCalc); });
-$("acS").addEventListener("blur", () => { const s = timeIn($("acS").value); if (s) { $("acS").value = mmss(s); altCalc(); } });
 altCalc();
 </script>
 </body>
