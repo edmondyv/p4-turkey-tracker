@@ -422,6 +422,12 @@ svg text{font-family:var(--text);font-size:11px;fill:var(--dim)}
 .empty{color:var(--mute);font-size:13px;padding:8px 0}
 footer{margin-top:16px;font-size:12px;color:var(--dim);display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:space-between}
 footer a{color:var(--mute)}
+footer{align-items:center}
+.dc{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);background:var(--card);border-radius:999px;padding:4px 11px 4px 9px;font:700 12px var(--text);color:var(--mute);box-shadow:0 3px 0 var(--deep);transition:border-color .15s,color .15s}
+.dc svg{width:15px;height:15px;flex:none;color:var(--lilac)}
+.dc b{color:var(--ink);font-weight:800}
+.dc:hover{border-color:var(--lilac);color:var(--ink)}
+.dc:active{transform:translateY(1px);box-shadow:0 2px 0 var(--deep)}
 .banner{display:none;margin:0 0 12px;padding:10px 14px;border-radius:16px;font-weight:700;border:2px solid;box-shadow:0 4px 0 var(--deep)}
 .banner.show{display:block}
 .banner.bad{background:#3a1420;border-color:var(--apple);color:#ffb1b6}
@@ -587,7 +593,8 @@ footer a{color:var(--mute)}
     </div>
   </section>
 
-  <footer><span id="foot">Data from BIG Games' public API, collected every 5 minutes.</span><span id="landFoot">Turkeys land every 20 minutes.</span></footer>
+  <footer><span id="foot">Data from BIG Games' public API, collected every 5 minutes.</span><span id="landFoot">Turkeys land every 20 minutes.</span>
+    <button type="button" class="dc" id="dcBtn" aria-label="Copy the Discord username ed.yv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12.5c0 3.9-3.6 7-8 7-1.1 0-2.2-.2-3.1-.6L4 20l1.3-3.6C4.5 15.3 4 14 4 12.5c0-3.9 3.6-7 8-7s8 3.1 8 7z"/><path d="M9 12.5h.01M12 12.5h.01M15 12.5h.01"/></svg><span>Discord</span><b>@ed.yv</b></button></footer>
 </div>
 
 <script>
@@ -696,6 +703,12 @@ function renderHero(d) {
   // entrance, once: the Titanic line, then the field sweeping in left to right, then the trails, then us
   if (firstPaint) { tr.classList.add("enter"); setTimeout(() => tr.classList.remove("enter"), 2400); }
 }
+// ---------- footer: tap to copy the Discord username
+$("dcBtn").addEventListener("click", () => {
+  const b = $("dcBtn").querySelector("b"), done = () => { b.textContent = "Copied"; setTimeout(() => (b.textContent = "@ed.yv"), 1500); };
+  (navigator.clipboard ? navigator.clipboard.writeText("ed.yv") : Promise.reject()).then(done, () => prompt("Discord username", "ed.yv"));
+});
+
 // ---------- race track: tap (or hover with a mouse) a dot for a card about that team
 let trkSel = null, trkPinned = false;
 const trkPace = (dv) => (dv == null ? "" : dv > 300 ? "#ff8a3d" : dv > 150 ? "#ffe45c" : dv >= -150 ? "#c9a6ec" : "#a59bb0");
