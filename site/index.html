@@ -127,10 +127,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mem small{display:block;font-size:12px;color:var(--mute)}
 .mem .bad-t{color:var(--apple);font-weight:700}
 .bars{display:flex;gap:2px;align-items:flex-end;height:18px;margin-top:3px}
-.bars i{display:block;width:6px;border-radius:2px;background:var(--leaf);opacity:.85}
+.bars i{display:block;width:6px;border-radius:2px;background:var(--leaf);opacity:.9}
+.bars i.hi{background:#5cc8e0} .bars i.pt{background:var(--caramel)}
 .bars i.z{background:var(--apple);height:3px!important;opacity:1}
 .bars i.n{background:var(--line);height:3px!important}
-.mem .p{font:600 16px var(--display);text-align:right}
+.mem .p{font:600 16px var(--display);text-align:right;align-self:start}
+.mem small.lt{color:var(--mute)} .mem small.lt b{color:var(--ink);display:inline;font-weight:700} .mem small.lt b.hiv{color:#8fe3f5} .mem small.lt b.up{color:var(--leaf)}
 .mem .p small{font:600 11px var(--text)}
 
 /* clock */
@@ -144,9 +146,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mini b{display:block;font:600 18px var(--display)}
 .mini small{color:var(--mute);font-size:11.5px;font-weight:600}
 
-.strip{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;align-items:end;height:46px}
+.strip{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;align-items:end;height:60px;padding-top:14px}
 .strip div{border-radius:5px 5px 2px 2px;background:var(--leaf);position:relative;min-height:4px;transition:height .6s}
-.strip div.half{background:var(--caramel)} .strip div.zero{background:var(--apple)} .strip div.na{background:var(--line)}
+.strip div.hi{background:#5cc8e0} .strip div.half{background:var(--caramel)} .strip div.zero{background:var(--apple)} .strip div.na{background:var(--line)}
 .strip div span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font:600 10.5px var(--text);color:var(--mute);margin-bottom:2px}
 .lands{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 .lands span{background:var(--card2);border-radius:999px;padding:3px 9px;font-weight:700;font-size:12px;color:var(--mute)}
@@ -273,7 +275,7 @@ footer a{color:var(--mute)}
         <div><b class="num" id="hLeft">–</b><small>Until the end</small></div>
         <div><b class="num" id="thisT">–</b><small id="thisTl">This Turkey so far</small></div>
       </div>
-      <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between"><span>Our last 12 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:var(--leaf)"></i>2k</span><span><i style="background:var(--caramel)"></i>partial</span><span><i style="background:var(--apple)"></i>none</span></span></div>
+      <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px"><span>Our last 12 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:#5cc8e0"></i>2k+</span><span><i style="background:var(--leaf)"></i>2k</span><span><i style="background:var(--caramel)"></i>less</span><span><i style="background:var(--apple)"></i>0</span></span></div>
       <div class="strip" id="strip" title="Team points on each Turkey: 2k means both pairs killed"></div>
       <div class="lands" id="lands"></div>
     </section>
@@ -423,11 +425,12 @@ function renderSquad(d) {
       if (prevStreak[u] === 0 && s > 0) notify(`${m.name} missed the last Turkey`);
       prevStreak[u] = s;
       const presTxt = pr ? (pr.type === 2 ? "in game" : pr.type === 1 ? "online" : "status hidden") : "";
-      const tk = m.turkeys || [], mx = Math.max(500, ...tk.filter((v) => v != null));
-      const bars = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i style="height:${Math.max(4, 18 * v / mx)}px"></i>`).join("");
+      const tk = m.turkeys || [], mx = Math.max(700, ...tk.filter((v) => v != null));
+      const bars = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i class="${v >= 600 ? "hi" : v >= 450 ? "" : "pt"}" style="height:${Math.max(4, 18 * v / mx)}px" title="${full(v)}"></i>`).join("");
+      const lastV = tk.length ? tk[tk.length - 1] : null, liveV = d.p4.thisTurkey && d.p4.thisTurkey.per ? d.p4.thisTurkey.per[u] : null;
       const av = P && P.avatars && P.avatars[u];
       const dot = av ? `<span class="ava"><img src="${av}" alt="" loading="lazy"><span class="st ${status[0]}"></span></span>` : `<span class="st ${status[0]}" title="${presTxt}"></span>`;
-      return `<div class="mem">${dot}<div><b>${esc(m.name)}</b><small>${status[1]}</small><div class="bars" title="Points on each of the last 12 Turkeys">${bars}</div></div><div class="p num">${k(m.points)}<small class="mute"><br>${m.h1 != null ? k(m.h1) + "/T" : ""}</small></div></div>`;
+      return `<div class="mem">${dot}<div><b>${esc(m.name)}</b><small>${status[1]}</small>${lastV != null || liveV ? `<small class="lt">${lastV != null ? `Last Turkey <b class="${lastV >= 600 ? "hiv" : ""}">${full(lastV)}</b>` : ""}${liveV ? `${lastV != null ? ", " : ""}now <b class="up">+${full(liveV)}</b>` : ""}</small>` : ""}<div class="bars" title="Points on each of the last 12 Turkeys">${bars}</div></div><div class="p num">${k(m.points)}</div></div>`;
     }).join("");
     return `<div class="pair"><h3><span>Pair ${i ? "B" : "A"}</span><span class="${ok ? "up" : "down"}">${ok ? "killing" : "short"}</span></h3>${rows}</div>`;
   }).join("");
@@ -461,11 +464,13 @@ function renderPace(d) {
   const rs = d.ref && d.ref.rankSince;
   $("rivNote").textContent = (lt ? `Last = ${lbl}` : "Points per Turkey") + (rs ? `, arrows since ${hm(rs)}` : ""); $("topNote").textContent = lbl;
   const tt = p.thisTurkey || {};
-  const pairsIn = PAIRS.filter((pr) => pr.some((u) => (tt.scored || []).includes(u))).length;
-  $("thisT").textContent = tt.pts == null ? "–" : "+" + k(tt.pts);
-  $("thisTl").textContent = tt.s ? `${hm(tt.s)} Turkey, ${pairsIn}/2 pairs in` : "This Turkey so far";
+  const nIn = (tt.scored || []).length;
+  $("thisT").textContent = tt.pts == null ? "–" : "+" + full(tt.pts);
+  $("thisTl").textContent = tt.s ? `${hm(tt.s)} Turkey, ${nIn}/4 scored` : "This Turkey so far";
   const tk = (p.turkeys || []).slice(-12), full2 = 2000;
-  $("strip").innerHTML = tk.map((t) => { const v = t.pts; const cls = v == null ? "na" : v <= 0 ? "zero" : v < full2 * .9 ? "half" : ""; return `<div class="${cls}" style="height:${v == null ? 4 : Math.max(4, Math.min(1, v / 2500) * 42)}px" title="${hm(t.s)} Turkey: ${v == null ? "no data" : full(v)}"></div>`; }).join("");
+  const smax = Math.max(2500, ...tk.map((t) => t.pts || 0));
+  $("strip").innerHTML = tk.map((t) => { const v = t.pts; const cls = v == null ? "na" : v <= 0 ? "zero" : v > 2050 ? "hi" : v >= 1950 ? "" : "half";
+    return `<div class="${cls}" style="height:${v == null ? 4 : Math.max(4, v / smax * 44)}px" title="${hm(t.s)} Turkey: ${v == null ? "no data" : full(v)}">${v != null ? `<span>${(v / 1000).toFixed(1)}</span>` : ""}</div>`; }).join("");
 }
 
 function renderTables(d) {

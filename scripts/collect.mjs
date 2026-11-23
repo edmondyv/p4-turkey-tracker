@@ -277,10 +277,12 @@ export async function main() {
       slower: packNow.filter((v) => v < myNow).length };
     const projRanks = { h3: projRank(9, "h3"), h12: projRank(36, "h12"), finish: projRank(turkeysLeft, "finish") };
     const openRec = cycles.find((c) => c.s === s0);
+    // points per member since the current Turkey landed (exact: points are credited at the kill)
+    const scoredNow = members.filter((x) => x.lastAt && x.lastAt >= s0).map((x) => x.uid);
     const thisTurkey = openRec && openRec.p[LEAGUE] != null ? {
-      s: s0, pts: p4.points - openRec.p[LEAGUE],
-      scored: members.filter((x) => x.lastAt && x.lastAt >= s0).map((x) => x.uid),
-    } : { s: s0, pts: null, scored: members.filter((x) => x.lastAt && x.lastAt >= s0).map((x) => x.uid) };
+      s: s0, pts: p4.points - openRec.p[LEAGUE], scored: scoredNow,
+      per: Object.fromEntries(members.map((x) => [x.uid, openRec.m && openRec.m[x.uid] != null ? x.points - openRec.m[x.uid] : null])),
+    } : { s: s0, pts: null, scored: scoredNow, per: null };
     p4out = {
       ...me, thisTurkey, icon: p4.icon, reward: p4.reward, members, turkeys: teamTurkeys, checkedTurkey: checkS, pack: packOut, projRanks,
       gaps: Object.fromEntries(marks.filter((x) => [10, 25, 100].includes(x.r)).map((x) => [x.r, x.p - p4.points])),
