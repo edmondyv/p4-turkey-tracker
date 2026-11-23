@@ -414,8 +414,8 @@ export async function main() {
     });
     // race track: from the top-100 line down to a little below P4
     const lo = Math.max(myR + 8, 108), hi = Math.min(92, myR - 4);
-    track = rows.filter((r) => r.r >= hi && r.r <= lo).map((r) => ({ r: r.r, n: r.n, p: r.p, icon: r.icon, me: r.n === LEAGUE }));
-    if (!track.some((t) => t.me)) track.push({ r: p4.place, n: LEAGUE, p: p4.points, me: true });
+    track = rows.filter((r) => r.r >= hi && r.r <= lo).map((r) => ({ r: r.r, n: r.n, p: r.p, icon: r.icon, h1: round(pace(r.n, 3)), me: r.n === LEAGUE }));
+    if (!track.some((t) => t.me)) track.push({ r: p4.place, n: LEAGUE, p: p4.points, h1: round(pace(LEAGUE, 3)), me: true });
 
     // ---------- alerts (one grouped message per run)
     const downNow = new Set(members.filter((x) => (x.streak ?? 0) > 0).map((x) => x.uid));
