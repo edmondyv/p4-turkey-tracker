@@ -607,16 +607,16 @@ function altCalc() {
   $("acAfk").innerHTML = both <= S
     ? `<div><small>Turkey dies with <b style="color:var(--ink)">${mmss(S - both)}</b> left</small><small>About ${(afkPts * 3).toLocaleString("en-US")} points an hour for the main</small></div><div class="v"><b class="num">${afkPts.toLocaleString("en-US")}</b><small>per Turkey</small></div>`
     : `<div><small>Even together it takes ${mmss(both)}, longer than 15:00</small></div><div class="v"><b class="num">0</b><small>per Turkey</small></div>`;
-  if (solo <= S - 120) {
+  if (solo <= S - 60) {
     $("acOut").innerHTML = `<div style="grid-column:1/-1"><b class="w">No alt needed</b><small>The main alone kills it with ${mmss(S - solo)} left and keeps the full 1,000.</small></div>`;
     $("acNote").textContent = `Uses ${fm(M)}M, a notch under what you typed. Main alone needs ${mmss(solo)}.`;
     return;
   }
-  $("acOut").innerHTML = [30, 60, 120].map((m) => {
+  $("acOut").innerHTML = [10, 30, 60].map((m) => {
     const F = S - m; let big, l1, l2, w = false;
     if (solo <= F) { big = "No alt"; w = true; l1 = `Main alone: ${mmss(S - solo)} left`; l2 = "Main <b>1,000</b>"; }
     else if (both > F) { w = true; big = both <= S ? "Stay all fight" : "Too slow"; l1 = both <= S ? `Dies with ${mmss(S - both)} left` : "Won't die in time"; l2 = `Main <b>${pts(M / (M + A))}</b>`; }
-    else { const t = (H - M * F) / A; big = mmss(S - t); l1 = `Main <b>${pts(1 - (A * t) / H)}</b>`; l2 = `Covers a ${Math.round((100 * m) / S)}% DPS dip`; }
+    else { const t = (H - M * F) / A; big = mmss(Math.floor(S - t)); l1 = `Main <b>${pts(1 - (A * t) / H)}</b>`; l2 = `Covers a ${Math.round((100 * m) / S)}% DPS dip`; }
     return `<div class="${m === 60 ? "pick" : ""}"><small>${m < 60 ? m + " s" : m / 60 + " min"} to spare</small><b class="num${w ? " w" : ""}">${big}</b><small>${l1}</small><small>${l2}</small></div>`;
   }).join("");
   $("acNote").textContent = `Uses ${fm(M)}M and ${fm(A)}M, a notch under what you typed, to be safe. Main alone would need ${mmss(solo)}${solo > S ? ", too long for 15:00" : ""}. Points assume 1,000 per kill, split by damage.`;
