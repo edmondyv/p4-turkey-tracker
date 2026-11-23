@@ -455,7 +455,7 @@ export async function main() {
           let t = s === 1
             ? `${mb.name} didn't score on the ${fmt(checkS)} Turkey (last points ${last}).`
             : `${mb.name} has missed ${s} Turkeys in a row (last points ${last}).`;
-          if (s === 1 && partner) t += downNow.has(partner) ? ` ${SQUAD[partner]} is down too: the whole pair is out.` : ` ${SQUAD[partner]} can't kill alone.`;
+          if (s === 1 && partner && downNow.has(partner)) t += ` ${SQUAD[partner]} is down too: the whole pair is out.`;
           return t;
         };
         lines.push(msg(hhmm));
