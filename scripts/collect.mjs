@@ -442,13 +442,26 @@ export async function main() {
   if (liveBoards.length) {
     const b = liveBoards[0], id = encodeURIComponent(b.id);
     const size = b.listSize || 10000; // the board only lists this many players
-    const [cut, last, ...entries] = await Promise.all([
+    const [cut, last, p1, p3, p5, ...entries] = await Promise.all([
       api(`/v1/leaderboards/${id}?source=live&page=11&pageSize=100`),
       api(`/v1/leaderboards/${id}?source=live&page=${size}&pageSize=1`),
+      api(`/v1/leaderboards/${id}?source=live&page=1&pageSize=100`),
+      api(`/v1/leaderboards/${id}?source=live&page=3&pageSize=100`),
+      api(`/v1/leaderboards/${id}?source=live&page=5&pageSize=100`),
       ...Object.keys(catchPeople).map((u) => api(`/v1/leaderboards/${id}/players/${u}?source=live`)),
     ]);
+    // benchmark ranks, and their pace over the last 6 hours from a snapshot kept every 30 minutes
+    const at = (pg, i) => (pg && pg.entries && pg.entries[i] ? pg.entries[i].Value : null);
+    const bench = { 1: at(p1, 0), 10: at(p1, 9), 100: at(p1, 99), 250: at(p3, 49), 500: at(p5, 99), 1003: at(cut, 2) };
+    if (live) {
+      hist.cb ||= [];
+      if (!hist.cb.length || now - hist.cb[hist.cb.length - 1].t >= 1800) hist.cb.push({ t: now, v: bench });
+      hist.cb = hist.cb.filter((x) => x.t > now - 8 * 86400);
+    }
+    const ref = (hist.cb || []).find((x) => x.t >= now - 6 * 3600), span = ref ? now - ref.t : 0;
+    const paceH = span >= 7200 ? Object.fromEntries(Object.keys(bench).map((r) => [r, bench[r] != null && ref.v[r] != null ? ((bench[r] - ref.v[r]) / span) * 3600 : null])) : null;
     catches = {
-      id: b.id, endsAt: b.scoringEndsAt,
+      id: b.id, endsAt: b.scoringEndsAt, bench, paceH, paceSpanH: span / 3600,
       cutoff1003: cut && cut.entries && cut.entries[2] ? cut.entries[2].Value : null,
       listSize: size, floor: last && last.entries && last.entries[0] ? last.entries[0].Value : null,
       players: Object.keys(catchPeople).map((u, i) => ({ uid: Number(u), name: catchPeople[u], rank: entries[i]?.entry?.Rank ?? null, value: entries[i]?.entry?.Value ?? null })),

@@ -148,6 +148,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .solo-h{display:flex;align-items:baseline;gap:2px 10px;flex-wrap:wrap;margin-bottom:10px}
 .solo-h span{font-size:12.5px}
 .solo-g{display:grid;gap:12px;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,.85fr)}
+.so-col{display:grid;gap:12px;align-content:start;min-width:0}
+.solo-g>.so-box{align-self:start}
 @media (max-width:1080px){.solo-g{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .so-board{grid-column:1/-1}}
 @media (max-width:680px){.solo-g{grid-template-columns:minmax(0,1fr)}}
 .so-box{background:var(--card2);border-radius:16px;padding:12px;min-width:0}
@@ -208,6 +210,22 @@ button{font:inherit;color:inherit;cursor:pointer}
 .so-base b{color:var(--ink);font-weight:800}
 .so-base .fld{width:76px;padding:0 7px} .so-base .fld input{font-size:15px;padding:3px 0}
 .so-notes{margin:8px 0 0;font-size:11.5px;color:var(--dim);font-weight:600;line-height:1.45}
+.so-th{display:flex;align-items:center;gap:8px}
+.so-th .fld{width:100px} .so-th>span{font-size:12.5px;font-weight:600}
+.so-pre,.so-me,.so-tg{display:flex;flex-wrap:wrap;gap:5px}
+.so-pre{margin-top:8px}
+.pc{display:inline-flex;align-items:baseline;gap:6px;border:2px solid var(--line);background:var(--deep);border-radius:999px;padding:4px 10px;font-weight:700;font-size:12px;color:var(--mute);transition:border-color .15s,color .15s,background .15s}
+.pc b{font:600 13.5px var(--display);color:var(--ink)}
+.pc.on{border-color:var(--caramel);color:var(--caramel2);background:rgba(246,169,59,.12)}
+.so-pin{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.so-pin label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;font-weight:600;color:var(--mute);min-width:0}
+.so-pin .fld input{font-size:16px;padding:5px 0}
+.so-need{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;background:rgba(255,241,224,.06);border-radius:14px;padding:9px 12px}
+.so-need b{display:block;font:600 28px/1 var(--display);color:var(--caramel2)}
+.so-need span{display:block;font-size:11.5px;color:var(--mute);font-weight:600;margin-top:3px}
+.so-need button{flex:none;border:2px solid var(--caramel);background:rgba(246,169,59,.12);color:var(--caramel2);border-radius:999px;padding:6px 12px;font-weight:800;font-size:12.5px}
+.so-need button:active{transform:translateY(1px)}
+.so-plan-f{margin-top:10px}
 .so-cut{font-size:12.5px;color:var(--mute);margin-bottom:6px} .so-cut b{color:var(--ink)}
 .so-p{padding:7px 0 5px;border-top:1px solid rgba(255,241,224,.07)}
 .so-pn{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:baseline}
@@ -454,6 +472,7 @@ footer a{color:var(--mute)}
   <section class="card solo" id="solo" hidden aria-label="Solo event">
     <header class="solo-h"><h2>Solo event</h2><span class="mute">Which pets are worth a net</span></header>
     <div class="solo-g">
+      <div class="so-col">
       <div class="so-box">
         <div class="so-lbl">Pet</div>
         <div class="so-rar" id="soRar"></div>
@@ -466,11 +485,25 @@ footer a{color:var(--mute)}
         </div>
         <div class="so-res" id="soRes" aria-live="polite"></div>
       </div>
+        <div class="so-box" id="soPlan">
+          <div class="so-lbl">Your plan<span id="soPlanEnd"></span></div>
+          <div class="so-me" id="soMe"></div>
+          <div class="so-pin">
+            <label>Nets in inventory<span class="fld"><input id="soInv" inputmode="numeric" autocomplete="off"></span></label>
+            <label>Nets per 25 min<span class="fld"><input id="soRate" inputmode="decimal" autocomplete="off"></span></label>
+          </div>
+          <div class="so-lbl" style="margin-top:12px">Target</div>
+          <div class="so-tg" id="soTg"></div>
+          <div id="soPlanOut"></div>
+        </div>
+      </div>
       <div class="so-box">
-        <div class="so-lbl">Lowest chance worth a net<span id="soShNote"></span></div>
+        <div class="so-lbl">Threshold<span>points per net to beat</span></div>
+        <div class="so-th"><span class="fld"><input id="soTh" inputmode="decimal" autocomplete="off" aria-label="Threshold in points per net"></span><span class="mute">points per net</span></div>
+        <div class="so-pre" id="soPre"></div>
+        <div class="so-lbl" style="margin-top:14px">Lowest chance worth a net<span id="soShNote"></span></div>
         <table class="tt" id="soTab"></table>
-        <div class="so-base"><b>Baseline</b><span>a normal bunny at</span><span class="fld"><input id="soBase" inputmode="decimal" autocomplete="off" aria-label="Normal bunny catch chance"><i>%</i></span><span id="soBaseV"></span></div>
-        <p class="so-notes">Worth a net: beats the baseline. Great: twice the baseline. Chances in game already include your rebirths. Auto hunt halves every pet, so it doesn't move these lines.</p>
+        <p class="so-notes" id="soNotes"></p>
       </div>
       <div class="so-box so-board" id="soBoard"></div>
     </div>
@@ -686,7 +719,7 @@ function renderSide(d) {
 
 function render() {
   if (!D || !D.p4) return;
-  renderHero(D); renderSquad(D); renderPace(D); renderTables(D); renderChart(D); renderDist(D); renderSide(D); soBoard(D); tick();
+  renderHero(D); renderSquad(D); renderPace(D); renderTables(D); renderChart(D); renderDist(D); renderSide(D); soBoard(D); soPlan(D); if (!$("solo").hidden) soRender(true); tick();
   $("upd").innerHTML = `<span class="hide-xs">Updated </span>${hm(D.updatedAt)}`;
   $("foot").textContent = `Data from BIG Games' public API, last snapshot ${ago(D.updatedAt)}.${D.ref ? ` Per-Turkey numbers use the snapshot of ${hm(D.ref.takenAt)}, taken while no Turkey was up.` : ""}`;
   firstPaint = false;
@@ -707,18 +740,33 @@ const SO_R = [
   { k: "huge", n: "Huge", p: 60, c: "#ffd23f", b: "rgba(255,210,63,.16)" },
 ];
 const SO_V = [{ k: "normal", n: "Normal", m: 1 }, { k: "gold", n: "Gold", m: 2 }, { k: "rainbow", n: "Rainbow", m: 5 }];
-const so = Object.assign({ r: "epic", v: "normal", sh: false, ch: "9", base: "97" }, (() => { try { return JSON.parse(localStorage.getItem("p4.solo.calc") || "{}"); } catch (e) { return {}; } })());
+const so = Object.assign({ r: "epic", v: "normal", sh: false, ch: "9", th: "r1003", thv: "1", inv: "1300", rate: "15", me: 216657469, tg: 1003 }, (() => { try { return JSON.parse(localStorage.getItem("p4.solo.calc") || "{}"); } catch (e) { return {}; } })());
 const soSave = () => { try { localStorage.setItem("p4.solo.calc", JSON.stringify(so)); } catch (e) {} };
 const soNum = (v) => { const x = parseFloat(String(v).replace(",", ".")); return isFinite(x) && x > 0 ? x : null; };
 const soPct = (x) => (x >= 100 ? "never" : (x < 1 ? x.toFixed(2) : x < 10 ? x.toFixed(1) : String(Math.round(x))) + "%");
 const soFmt = (x) => (x < 1 ? x.toFixed(2) : x < 10 ? x.toFixed(1) : String(Math.round(x)));
 const soPts = (r, v) => r.p * v.m * (so.sh ? 3 : 1);
-const soBase = () => Math.min(100, soNum(so.base) || 97) / 100; // points per net from a normal bunny
+const SO_RANKS = [1003, 500, 250, 100, 10, 1];
+const soRateH = () => (soNum(so.rate) || 15) * 60 / 25; // nets per hour if every restock is collected
+const soHours = () => { const s = D && D.season && D.season.start; return s ? Math.max(0.1, (Date.now() / 1000 - s) / 3600) : null; };
+const soLeftH = () => { const e = D && D.catches && D.catches.endsAt; return e ? Math.max(0, (e - Date.now() / 1000) / 3600) : 0; };
+// points per net so far for a rank, if they caught from the start and used every net at our rate
+const soRankPPN = (r) => { const v = D && D.catches && D.catches.bench ? D.catches.bench[r] : null, h = soHours(); return v != null && h ? v / (h * soRateH()) : null; };
+const soRankName = (r) => (r === 1003 ? "Titanic" : "#" + r);
+const soBase = () => { // the threshold, in points per net
+  if (so.th === "custom") return soNum(so.thv) || 1;
+  if (so.th === "bunny") return 0.97;
+  return soRankPPN(+String(so.th).slice(1)) || 0.97;
+};
 const SL0 = -1, SL1 = 2; // slider runs 0.1% .. 100% on a log scale
 const soPos = (x) => (Math.log10(Math.min(100, Math.max(0.1, x))) - SL0) / (SL1 - SL0);
 const soFromPos = (p) => Math.pow(10, SL0 + p * (SL1 - SL0));
 function soRender(fromInput) {
   const r = SO_R.find((x) => x.k === so.r) || SO_R[3], v = SO_V.find((x) => x.k === so.v) || SO_V[0], pts = soPts(r, v), b = soBase();
+  if (document.activeElement !== $("soTh")) $("soTh").value = b.toFixed(2);
+  $("soPre").innerHTML = [["bunny", "Bunny", 0.97], ...SO_RANKS.map((k) => ["r" + k, soRankName(k), soRankPPN(k)])].map(([k, n, val]) =>
+    `<button type="button" class="pc${so.th === k ? " on" : ""}" data-th="${k}">${n} <b class="num">${val != null ? val.toFixed(2) : "–"}</b></button>`).join("");
+  $("soNotes").textContent = `A rank's points per net assume they caught since the event started and threw every net at ${soNum(so.rate) || 15} per 25 minutes, so players who buy nets look better than they are. Great means twice the threshold. Chances in game already include rebirths, and auto hunt halves every pet.`;
   $("soRar").innerHTML = SO_R.map((x) => `<button type="button" class="rc${x === r ? " on" : ""}" style="--rc:${x.c};--rcb:${x.b}" data-r="${x.k}" aria-pressed="${x === r}"><i></i><span>${x.n}</span></button>`).join("");
   $("soVar").innerHTML = SO_V.map((x) => `<button type="button" class="vc v-${x.k}${x === v ? " on" : ""}" data-v="${x.k}" aria-pressed="${x === v}">${x.n}${x.m > 1 ? " ×" + x.m : ""}</button>`).join("") +
     `<button type="button" class="vc v-shiny${so.sh ? " on" : ""}" data-sh="1" aria-pressed="${so.sh}">✦ Shiny ×3</button>`;
@@ -731,10 +779,9 @@ function soRender(fromInput) {
   else {
     const ev = (Math.min(ch, 100) / 100) * pts, ratio = ev / b, cls = ratio >= 2 ? "great" : ratio >= 1 ? "ok" : "skip";
     $("soRes").innerHTML = `<div class="so-v ${cls}"><b class="num">${ev < 10 ? ev.toFixed(2) : ev.toFixed(1)}</b><span>points per net</span><em>${ratio >= 2 ? "Go for it" : ratio >= 1 ? "Worth a net" : "Skip it"}</em></div>
-      <div class="so-facts"><span>Each catch<b class="num">${pts} pts</b></span><span>Vs a bunny<b class="num">${ratio.toFixed(1)}×</b></span><span>Worth it from<b class="num">${soPct(be)}</b></span><span>Great from<b class="num">${soPct(gr)}</b></span></div>`;
+      <div class="so-facts"><span>Each catch<b class="num">${pts} pts</b></span><span>Vs threshold<b class="num">${ratio.toFixed(1)}×</b></span><span>Worth it from<b class="num">${soPct(be)}</b></span><span>Great from<b class="num">${soPct(gr)}</b></span></div>`;
   }
   $("soShNote").textContent = so.sh ? "shiny included" : "";
-  $("soBaseV").textContent = `= ${b.toFixed(2)} pts per net`;
   $("soTab").innerHTML = `<thead><tr><th></th>${SO_V.map((x) => `<th>${x.n}<small>×${x.m * (so.sh ? 3 : 1)}</small></th>`).join("")}</tr></thead><tbody>` +
     SO_R.map((rr) => `<tr><th style="--rc:${rr.c}"><i></i>${rr.n}<small>${rr.p} pt${rr.p > 1 ? "s" : ""}</small></th>` + SO_V.map((vv) => {
       const p = soPts(rr, vv), t = (100 * b) / p, g = (200 * b) / p, on = rr === r && vv === v;
@@ -754,23 +801,49 @@ function soBoard(d) {
         <div class="so-pb"><i class="${gap != null && gap <= 0 ? "in" : ""}" style="width:${w * 100}%"></i></div><small>${gap == null ? "Not in the listed top " + full(c.listSize || 10000) + " yet" : gap <= 0 ? "In the Titanic zone" : full(gap) + " points to go"}</small></div>`;
     }).join("") + `<div class="so-foot">The board refreshes every 3 to 5 minutes, and a catch can take up to 10 minutes to show.</div>`;
 }
+function soPlan(d) {
+  if ($("solo").hidden) return;
+  const c = d && d.catches, h = soHours(), left = soLeftH(), rate = soRateH();
+  $("soPlanEnd").textContent = left > 0 ? `${Math.round(left)} h left` : "";
+  if (!c || !c.bench || !h) { $("soMe").innerHTML = ""; $("soTg").innerHTML = ""; $("soPlanOut").innerHTML = '<div class="empty">Waiting for the catches board.</div>'; return; }
+  const me = c.players.find((x) => x.uid === +so.me) || c.players[0];
+  $("soMe").innerHTML = c.players.map((x) => `<button type="button" class="pc${x === me ? " on" : ""}" data-me="${x.uid}">${esc(x.name)}</button>`).join("");
+  $("soTg").innerHTML = SO_RANKS.map((k) => `<button type="button" class="pc${+so.tg === k ? " on" : ""}" data-tg="${k}">${soRankName(k)} <b class="num">${full(c.bench[k])}</b></button>`).join("");
+  if (document.activeElement !== $("soInv")) $("soInv").value = so.inv;
+  if (document.activeElement !== $("soRate")) $("soRate").value = so.rate;
+  const tg = +so.tg, now = c.bench[tg], mine = me && me.value != null ? me.value : 0, inv = Math.max(0, soNum(so.inv) || 0);
+  if (now == null) { $("soPlanOut").innerHTML = ""; return; }
+  const pace = c.paceH && c.paceH[tg] != null ? c.paceH[tg] : now / h, paceSrc = c.paceH && c.paceH[tg] != null ? `over the last ${Math.round(c.paceSpanH)} h` : "since the start";
+  const fin = Math.round(now + pace * left), future = Math.round(left * rate), nets = inv + future, need = fin - mine, ppn = nets > 0 ? need / nets : null;
+  $("soPlanOut").innerHTML = (need <= 0
+    ? `<div class="so-need"><div><b class="num" style="color:var(--leaf)">On track</b><span>${esc(me.name)} is already above where ${soRankName(tg)} should finish.</span></div></div>`
+    : `<div class="so-need"><div><b class="num">${ppn != null ? ppn.toFixed(2) : "–"}</b><span>points per net needed from now on</span></div>${ppn != null ? `<button type="button" data-useppn="${ppn.toFixed(2)}">Use as threshold</button>` : ""}</div>`) +
+    `<div class="so-facts so-plan-f"><span>${soRankName(tg)} finishes near<b class="num">${full(fin)}</b></span><span>${esc(me.name)} needs<b class="num">${need > 0 ? "+" + full(need) : "0"}</b></span>
+     <span>Nets you can throw<b class="num">${full(nets)}</b></span><span>Max collected so far<b class="num">${full(Math.round(h * rate))}</b></span></div>
+     <p class="so-notes">${soRankName(tg)} gains about ${full(Math.round(pace))} points an hour ${paceSrc}. Nets you can throw = your inventory plus ${full(future)} still to collect if you grab every restock until the end. Max collected so far is what someone who never missed a restock since the start would have had.</p>`;
+}
 $("solo").addEventListener("click", (e) => {
   const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.th) so.th = t.dataset.th;
+  if (t.dataset.me) so.me = +t.dataset.me;
+  if (t.dataset.tg) so.tg = +t.dataset.tg;
+  if (t.dataset.useppn) { so.th = "custom"; so.thv = t.dataset.useppn; }
   if (t.dataset.sh) so.sh = !so.sh;
   if (t.dataset.r) so.r = t.dataset.r;
   if (t.dataset.v) so.v = t.dataset.v;
-  soSave(); soRender();
+  soSave(); soRender(); soPlan(D);
 });
 $("soCh").addEventListener("input", (e) => { so.ch = e.target.value; soSave(); soRender(true); });
 $("soCh").addEventListener("blur", () => { const x = soNum(so.ch); if (x) { so.ch = soFmt(Math.min(100, x)); soSave(); soRender(); } });
 $("soRange").addEventListener("input", (e) => { so.ch = soFmt(soFromPos(e.target.value / 1000)); soSave(); soRender(); });
-$("soBase").value = so.base;
-$("soBase").addEventListener("input", (e) => { so.base = e.target.value; soSave(); soRender(true); });
+$("soTh").addEventListener("input", (e) => { so.th = "custom"; so.thv = e.target.value; soSave(); soRender(true); });
+$("soInv").addEventListener("input", (e) => { so.inv = e.target.value; soSave(); soPlan(D); });
+$("soRate").addEventListener("input", (e) => { so.rate = e.target.value; soSave(); soRender(true); soPlan(D); });
 function setSolo(on, fromTap) {
   const s = $("solo"); s.hidden = !on;
   try { on ? localStorage.setItem("p4.solo", "1") : localStorage.removeItem("p4.solo"); } catch (e) {}
   if (!on) return;
-  soRender(); soBoard(D);
+  soRender(); soBoard(D); soPlan(D);
   if (fromTap) {
     s.classList.remove("reveal"); void s.offsetWidth; s.classList.add("reveal");
     s.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
