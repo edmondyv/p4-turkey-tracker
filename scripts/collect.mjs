@@ -436,16 +436,19 @@ export async function main() {
   let catches = null;
   const list = boards && (boards.leaderboards || boards.boards || (Array.isArray(boards) ? boards : []));
   const liveBoards = (Array.isArray(list) ? list : []).filter((b) => b.state === "live" && b.scoringEndsAt > now).sort((a, b) => b.scoringEndsAt - a.scoringEndsAt);
+  // players followed on the catches board on top of the squad
+  const CATCH_EXTRA = { 4191632998: "Cocosdelamuerte" };
+  const catchPeople = { ...SQUAD, ...CATCH_EXTRA };
   if (liveBoards.length) {
     const b = liveBoards[0], id = encodeURIComponent(b.id);
     const [cut, ...entries] = await Promise.all([
       api(`/v1/leaderboards/${id}?source=live&page=11&pageSize=100`),
-      ...Object.keys(SQUAD).map((u) => api(`/v1/leaderboards/${id}/players/${u}?source=live`)),
+      ...Object.keys(catchPeople).map((u) => api(`/v1/leaderboards/${id}/players/${u}?source=live`)),
     ]);
     catches = {
       id: b.id, endsAt: b.scoringEndsAt,
       cutoff1003: cut && cut.entries && cut.entries[2] ? cut.entries[2].Value : null,
-      players: Object.keys(SQUAD).map((u, i) => ({ uid: Number(u), name: SQUAD[u], rank: entries[i]?.entry?.Rank ?? null, value: entries[i]?.entry?.Value ?? null })),
+      players: Object.keys(catchPeople).map((u, i) => ({ uid: Number(u), name: catchPeople[u], rank: entries[i]?.entry?.Rank ?? null, value: entries[i]?.entry?.Value ?? null })),
     };
   }
 
