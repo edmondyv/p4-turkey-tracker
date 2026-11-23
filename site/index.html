@@ -81,8 +81,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .track{position:relative;height:118px;margin:16px 4px 0}
 .lane{position:absolute;left:0;right:0;top:56px;height:16px;border-radius:999px;background:repeating-linear-gradient(90deg,#24122c 0 14px,#2a1533 14px 28px);border:2px solid var(--line)}
 .dot{position:absolute;top:0;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--lilac);opacity:.8;border:2px solid var(--deep);transition:left .9s cubic-bezier(.2,.9,.25,1.1),top .4s}
-/* Each dot is coloured by its 1-hour pace against ours (warm = gaining on us, cool = losing ground)
-   and drawn as if P4 stood still: gaining teams leave a trail behind them, slower ones drift back.
+/* Each dot is coloured by its 1-hour pace against ours (warm = gaining on us, grey = slower).
+   Only teams gaining on us get a trail, behind them, so a trail always means "moving up on us".
    Depth: teams that cross us before the end at this pace are bigger and in front; the rest recede. */
 .dot{--c:var(--lilac);--g:transparent;background:var(--c);box-shadow:0 0 var(--gl,0) var(--g);opacity:.75}
 .dot:before{content:"";position:absolute;top:50%;height:3px;margin-top:-1.5px;width:var(--tl,0);border-radius:2px}
@@ -92,11 +92,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 .dot.vm1{--c:#8d8297;opacity:.5}
 .dot.vm2{--c:#625a6b;opacity:.38}
 .dot.v2:before,.dot.v1:before{right:100%;background:linear-gradient(90deg,transparent,var(--c))}
-.dot.vm1:before,.dot.vm2:before{left:100%;background:linear-gradient(90deg,var(--c),transparent);opacity:.55}
 .dot.near{width:14px;height:14px;margin-left:-7px;margin-top:-2px;z-index:4;opacity:1;border-width:2px;outline:2px solid var(--c);outline-offset:2px}
 .dot.near.thr{outline-color:#ff8a3d}
 .dot.near.tgt{outline-color:var(--leaf)}
-.dot.near.tgt.vm1,.dot.near.tgt.vm2{--c:#b3a9bd}
 .dot.far{transform:scale(.8)}
 .trk-key{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin:10px 4px 0;font-size:11.5px;color:var(--mute);font-weight:600}
 .trk-key span{display:inline-flex;align-items:center;gap:5px}
@@ -645,7 +643,7 @@ function renderHero(d) {
   const band = (dv) => (dv == null ? "" : dv > 300 ? "v2" : dv > 150 ? "v1" : dv >= -150 ? "v0" : dv >= -300 ? "vm1" : "vm2");
   const crosses = (t) => { const dv = rel(t), gap = t.p - p.p; return dv != null && ((gap < 0 && dv > 50) || (gap > 0 && dv < -50)) && Math.abs(gap) / Math.abs(dv) <= left; };
   d.track.filter((t) => !t.me).forEach((t, i) => {
-    const dv = rel(t), b = band(dv), near = crosses(t), tl = dv == null || Math.abs(dv) <= 150 ? 0 : Math.round(Math.min(34, 5 + (Math.abs(dv) / 800) * 29));
+    const dv = rel(t), b = band(dv), near = crosses(t), tl = dv == null || dv <= 150 ? 0 : Math.round(Math.min(34, 5 + (dv / 800) * 29)); // trails only on teams gaining on us
     const eta = near ? Math.ceil(Math.abs(t.p - p.p) / Math.abs(dv)) : null;
     const tip = `#${t.r} ${esc(t.n)}, ${full(t.p)}${t.h1 != null ? `, ${full(t.h1)} per Turkey over the last hour (${dv >= 0 ? "+" : ""}${full(dv)} vs us)` : ""}${eta ? (t.p < p.p ? `, passes us in about ${eta} Turkeys` : `, we pass them in about ${eta} Turkeys`) : ""}`;
     html += `<div class="dot ${b}${near ? " near" + (t.p > p.p ? " tgt" : " thr") : b === "vm2" ? " far" : ""}" title="${tip}" style="left:${firstPaint ? 0 : x(t.p)}%;top:${59 + [0, -18, 18, -9, 9][i % 5]}px;--tl:${tl}px" data-x="${x(t.p)}"></div>`;
