@@ -81,13 +81,25 @@ button{font:inherit;color:inherit;cursor:pointer}
 .track{position:relative;height:96px;margin:16px 4px 0}
 .lane{position:absolute;left:0;right:0;top:40px;height:16px;border-radius:999px;background:repeating-linear-gradient(90deg,#24122c 0 14px,#2a1533 14px 28px);border:2px solid var(--line)}
 .dot{position:absolute;top:0;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--lilac);opacity:.8;border:2px solid var(--deep);transition:left .9s cubic-bezier(.2,.9,.25,1.1),top .4s}
-.dot.in{background:var(--caramel2)}
-/* faster than us over the last hour: bright, with a trail showing they're moving up on us */
-.dot.fast{background:#ffe45c;opacity:1;z-index:1;box-shadow:0 0 9px rgba(255,228,92,.65)}
-.dot.fast:before{content:"";position:absolute;right:100%;top:50%;width:var(--tl,12px);height:4px;margin-top:-2px;border-radius:2px;background:linear-gradient(90deg,rgba(255,228,92,0),rgba(255,228,92,.8))}
-.trk-note{display:flex;align-items:center;gap:7px;margin:8px 4px 0;font-size:12px;color:var(--mute);font-weight:600}
-.trk-note i{flex:none;position:relative;width:9px;height:9px;margin-left:16px;border-radius:50%;background:#ffe45c;box-shadow:0 0 8px rgba(255,228,92,.6)}
-.trk-note i:before{content:"";position:absolute;right:100%;top:50%;width:14px;height:3px;margin-top:-1.5px;border-radius:2px;background:linear-gradient(90deg,rgba(255,228,92,0),rgba(255,228,92,.8))}
+/* Each dot is coloured by its 1-hour pace against ours (warm = gaining on us, cool = losing ground)
+   and drawn as if P4 stood still: gaining teams leave a trail behind them, slower ones drift back.
+   Depth: teams that cross us before the end at this pace are bigger and in front; the rest recede. */
+.dot{--c:var(--lilac);--g:transparent;background:var(--c);box-shadow:0 0 var(--gl,0) var(--g);opacity:.75}
+.dot:before{content:"";position:absolute;top:50%;height:3px;margin-top:-1.5px;width:var(--tl,0);border-radius:2px}
+.dot.v2{--c:#ff8a3d;--g:rgba(255,138,61,.75);--gl:11px;opacity:1}
+.dot.v1{--c:#ffe45c;--g:rgba(255,228,92,.6);--gl:8px;opacity:1}
+.dot.v0{--c:#b58fd6;opacity:.7}
+.dot.vm1{--c:#7fa8d9;opacity:.6}
+.dot.vm2{--c:#5d7aa6;opacity:.45}
+.dot.v2:before,.dot.v1:before{right:100%;background:linear-gradient(90deg,transparent,var(--c))}
+.dot.vm1:before,.dot.vm2:before{left:100%;background:linear-gradient(90deg,var(--c),transparent);opacity:.7}
+.dot.near{width:14px;height:14px;margin-left:-7px;margin-top:-2px;z-index:2;opacity:1;border-width:2px;outline:2px solid var(--c);outline-offset:2px}
+.dot.far{transform:scale(.8)}
+.trk-key{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin:10px 4px 0;font-size:11.5px;color:var(--mute);font-weight:600}
+.trk-key span{display:inline-flex;align-items:center;gap:5px}
+.trk-key i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.trk-key .ring{width:9px;height:9px;background:transparent;outline:2px solid var(--mute);outline-offset:1px}
+.trk-note{margin:6px 4px 0;font-size:12px;color:var(--mute);font-weight:600}
 .trk-note b{color:var(--ink)}
 .token{position:absolute;top:22px;margin-left:-20px;width:40px;height:40px;border-radius:50%;z-index:3;transition:left 1.1s cubic-bezier(.2,.9,.25,1.15);
   background:radial-gradient(circle at 35% 30%,#ffb35a,var(--caramel) 55%,#c66f12);box-shadow:0 4px 0 var(--deep);display:grid;place-items:center;font:700 13px var(--display);color:var(--deep)}
@@ -401,6 +413,7 @@ footer a{color:var(--mute)}
         <div class="prize" id="prize"><div class="medal h">H</div><div><b>–</b><small>Current reward</small></div></div>
       </div>
       <div class="track" id="track" aria-hidden="true"><div class="lane"></div></div>
+      <div class="trk-key" id="trkKey" hidden><span style="--c:#ff8a3d"><i></i>much faster</span><span style="--c:#ffe45c"><i></i>faster</span><span style="--c:#b58fd6"><i></i>same pace</span><span style="--c:#7fa8d9"><i></i>slower</span><span style="--c:#5d7aa6"><i></i>much slower</span><span><i class="ring"></i>crosses us before the end</span></div>
       <div class="trk-note" id="trkNote" hidden></div>
       <div class="ladder" id="ladder" aria-label="Rewards by place"></div>
     </section>
@@ -620,16 +633,22 @@ function renderHero(d) {
   const tr = $("track"), pts = d.track.map((t) => t.p).concat(c100 ? [c100.p] : []), lo = Math.min(...pts), hi = Math.max(...pts), pad = (hi - lo) * .04 || 1;
   const x = (v) => ((v - lo + pad) / (hi - lo + 2 * pad)) * 100;
   let html = '<div class="lane"></div>';
-  // teams scoring more per Turkey than us over the last hour (with a 50-point margin against noise)
-  const myH1 = (d.track.find((t) => t.me) || {}).h1 ?? p.h1;
-  const fast = (t) => myH1 != null && t.h1 != null && t.h1 > myH1 + 50;
+  // relative pace against ours over the last hour (points per Turkey), and whether they cross us before the end
+  const myH1 = (d.track.find((t) => t.me) || {}).h1 ?? p.h1, left = d.season.turkeysLeft || 0;
+  const rel = (t) => (myH1 != null && t.h1 != null ? t.h1 - myH1 : null);
+  const band = (dv) => (dv == null ? "" : dv > 300 ? "v2" : dv > 50 ? "v1" : dv >= -50 ? "v0" : dv >= -300 ? "vm1" : "vm2");
+  const crosses = (t) => { const dv = rel(t), gap = t.p - p.p; return dv != null && ((gap < 0 && dv > 50) || (gap > 0 && dv < -50)) && Math.abs(gap) / Math.abs(dv) <= left; };
   d.track.filter((t) => !t.me).forEach((t, i) => {
-    const f = fast(t), tl = f ? Math.round(Math.min(34, 6 + ((t.h1 - myH1) / 1000) * 28)) : 0;
-    html += `<div class="dot ${t.r <= 100 ? "in" : ""}${f ? " fast" : ""}" title="#${t.r} ${esc(t.n)} ${full(t.p)}${t.h1 != null ? `, ${full(t.h1)} per Turkey over the last hour` : ""}" style="left:${firstPaint ? 0 : x(t.p)}%;top:${42 + [0, -18, 18, -9, 9][i % 5] + 3}px;--tl:${tl}px" data-x="${x(t.p)}"></div>`;
+    const dv = rel(t), b = band(dv), near = crosses(t), tl = dv == null || Math.abs(dv) <= 50 ? 0 : Math.round(Math.min(34, 5 + (Math.abs(dv) / 800) * 29));
+    const eta = near ? Math.ceil(Math.abs(t.p - p.p) / Math.abs(dv)) : null;
+    const tip = `#${t.r} ${esc(t.n)}, ${full(t.p)}${t.h1 != null ? `, ${full(t.h1)} per Turkey over the last hour (${dv >= 0 ? "+" : ""}${full(dv)} vs us)` : ""}${eta ? (t.p < p.p ? `, passes us in about ${eta} Turkeys` : `, we pass them in about ${eta} Turkeys`) : ""}`;
+    html += `<div class="dot ${b}${near ? " near" : b === "vm2" ? " far" : ""}" title="${tip}" style="left:${firstPaint ? 0 : x(t.p)}%;top:${42 + [0, -18, 18, -9, 9][i % 5] + 3}px;--tl:${tl}px" data-x="${x(t.p)}"></div>`;
   });
-  const others = d.track.filter((t) => !t.me), behind = others.filter((t) => t.p < p.p && fast(t)).length, ahead = others.filter((t) => t.p >= p.p && fast(t)).length;
-  $("trkNote").hidden = myH1 == null;
-  $("trkNote").innerHTML = `<i></i><span>Faster than us over the last hour: <b>${behind}</b> behind us ${behind === 1 ? "is" : "are"} catching up, <b>${ahead}</b> ahead ${ahead === 1 ? "is" : "are"} pulling away.</span>`;
+  const others = d.track.filter((t) => !t.me && rel(t) != null);
+  const catching = others.filter((t) => t.p < p.p && rel(t) > 50), passing = catching.filter(crosses).length;
+  const pulling = others.filter((t) => t.p >= p.p && rel(t) > 50).length, gaining = others.filter((t) => t.p > p.p && crosses(t)).length;
+  $("trkKey").hidden = $("trkNote").hidden = myH1 == null;
+  $("trkNote").innerHTML = `<b>${catching.length}</b> behind us ${catching.length === 1 ? "is" : "are"} faster${catching.length ? ` (<b>${passing}</b> would pass us before the end)` : ""}, <b>${pulling}</b> ahead ${pulling === 1 ? "is" : "are"} pulling away, and we'd pass <b>${gaining}</b> ahead of us at this pace.`;
   if (c100) html += `<div class="fin" style="left:${x(c100.p)}%"><span style="${x(c100.p) > 70 ? "left:auto;right:6px" : ""}">Titanic line #100</span></div>`;
   html += `<div class="token" style="left:${firstPaint ? 0 : x(p.p)}%" data-x="${x(p.p)}">P4<span class="tag">#${p.r}</span></div>`;
   const ticks = 4; html += '<div class="axis">' + Array.from({ length: ticks + 1 }, (_, i) => { const v = lo - pad + (hi - lo + 2 * pad) * i / ticks; return `<span style="left:${i * 100 / ticks}%">${k(v)}</span>`; }).join("") + "</div>";
