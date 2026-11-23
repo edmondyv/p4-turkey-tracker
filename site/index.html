@@ -874,6 +874,7 @@ function soQuiet(d) {
   if (!q || !q.top || !q.top.length) { el.innerHTML = '<div class="so-lbl">Quiet servers</div><div class="empty">No scan yet. The list fills in within 5 minutes.</div>'; return; }
   const nowS = Date.now() / 1000;
   el.innerHTML = `<div class="so-lbl">Quiet servers<span>${full(q.total)} PS99 servers at 1 player</span></div>` +
+    (q.stale ? `<p class="so-notes" style="margin:0 0 6px;color:var(--caramel2)">Roblox didn't answer the last scan. This list is from ${hm(q.at)}.</p>` : "") +
     q.top.map((x) => { const dur = q.at - x.since; return `<div class="qs${dur >= 3 * 3600 ? " long" : ""}"><div><b class="num">${durTxt(dur)}</b><small>at ${x.p} player${x.p === 1 ? "" : "s"} since ${hm(x.since)}${x.ping ? `, their ping ${x.ping} ms` : ""}</small></div>
       <button type="button" data-copy="${esc(x.id)}">Copy ID</button><a href="roblox://experiences/start?placeId=${q.placeId}&gameInstanceId=${encodeURIComponent(x.id)}">Join</a></div>`; }).join("") +
     `<p class="so-notes">Longest first: how long each server has stayed at 1 player or fewer, tracked since ${hm(q.tracking)} and checked every 5 minutes. A long time suggests Roblox rarely sends players there, but it's still public: a stranger who hits your Turkey takes part of the 1,000. Copy ID gives the server's job ID for an account manager. Updated ${Math.max(0, Math.round((nowS - q.at) / 60))} min ago.</p>`;

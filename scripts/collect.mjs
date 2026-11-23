@@ -33,22 +33,41 @@ const round = (x) => (x == null || !isFinite(x) ? null : Math.round(x));
 
 // PS99's public server list from Roblox, emptiest first: every server with at most 1 player
 const PLACE_ID = 8737899170;
-async function quietScan() {
+async function quietScanDirect() {
   const out = new Map();
   let cursor = "", complete = false;
   for (let page = 0; page < 10; page++) {
     let r = null;
-    try {
-      const res = await fetch(`https://games.roblox.com/v1/games/${PLACE_ID}/servers/Public?sortOrder=Asc&limit=100${cursor ? "&cursor=" + encodeURIComponent(cursor) : ""}`, { headers: { "User-Agent": "p4-turkey-tracker/2.0 (github actions)" } });
-      if (res.ok) r = await res.json();
-    } catch {}
-    if (!r || !Array.isArray(r.data)) return null; // rate limited or down: keep what we know
+    for (let tryN = 0; tryN < 2 && !r; tryN++) {
+      try {
+        const res = await fetch(`https://games.roblox.com/v1/games/${PLACE_ID}/servers/Public?sortOrder=Asc&limit=100${cursor ? "&cursor=" + encodeURIComponent(cursor) : ""}`, { headers: { "User-Agent": "p4-turkey-tracker/2.0 (github actions)" } });
+        if (res.ok) r = await res.json();
+        else { console.log(`servers: Roblox answered ${res.status}`); await sleep(1500); }
+      } catch (e) { console.log("servers: " + e.message); }
+    }
+    if (!r || !Array.isArray(r.data)) return null;
     for (const x of r.data) if (x.playing <= 1) out.set(x.id, { p: x.playing, max: x.maxPlayers, ping: x.ping });
     const lastP = r.data.length ? r.data[r.data.length - 1].playing : 99;
     if (lastP > 1 || !r.nextPageCursor) { complete = true; break; }
     cursor = r.nextPageCursor;
   }
   return { servers: out, complete };
+}
+// Roblox often refuses GitHub's shared IPs, so fall back to the same scan run by the site on Vercel
+const SITE = process.env.SITE_URL || "https://p4-turkey-tracker.vercel.app";
+async function quietScan() {
+  const direct = await quietScanDirect();
+  if (direct) return direct;
+  try {
+    const res = await fetch(`${SITE}/api/servers`);
+    const j = res.ok ? await res.json() : null;
+    if (j && Array.isArray(j.servers) && (j.complete || j.servers.length)) {
+      console.log(`servers: via the site, ${j.servers.length} at <= 1 player`);
+      return { servers: new Map(j.servers.map((x) => [x.id, { p: x.playing, max: x.maxPlayers, ping: x.ping }])), complete: !!j.complete };
+    }
+    console.log(`servers: site fallback failed (${res.status})`);
+  } catch (e) { console.log("servers: site fallback " + e.message); }
+  return null;
 }
 
 async function api(p, tries = 3) {
@@ -547,6 +566,8 @@ export async function main() {
   let quiet = null;
   const scan = live ? await quietScan() : null;
   if (scan) {
+    // after a long gap we can't know what happened in between, so restart the tracking
+    if (hist.srvAt && now - hist.srvAt > 3600) { hist.srv = {}; hist.srvFrom = now; }
     hist.srv ||= {};
     hist.srvFrom ||= now;
     for (const [id, x] of scan.servers) {
@@ -558,7 +579,13 @@ export async function main() {
       if (o.last !== now && (scan.complete || now - o.last > 3600)) delete hist.srv[id];
     }
     const list = Object.entries(hist.srv).filter(([, o]) => o.last === now).sort((a, b) => a[1].since - b[1].since);
+    hist.srvAt = now; hist.srvTotal = scan.servers.size;
     quiet = { at: now, placeId: PLACE_ID, total: scan.servers.size, complete: scan.complete, tracking: hist.srvFrom,
+      top: list.slice(0, 15).map(([id, o]) => ({ id, since: o.since, p: o.p, max: o.max, ping: o.ping })) };
+  } else if (hist.srv && hist.srvAt) {
+    // scan failed: show the last good list, marked with its age
+    const list = Object.entries(hist.srv).filter(([, o]) => o.last === hist.srvAt).sort((a, b) => a[1].since - b[1].since);
+    quiet = { at: hist.srvAt, placeId: PLACE_ID, total: hist.srvTotal || list.length, complete: false, stale: true, tracking: hist.srvFrom,
       top: list.slice(0, 15).map(([id, o]) => ({ id, since: o.since, p: o.p, max: o.max, ping: o.ping })) };
   }
 
