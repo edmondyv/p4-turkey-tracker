@@ -127,23 +127,46 @@ function migrate(hist) {
   hist.v = 3;
 }
 
-function makePace(cycles) {
+function makePace(cycles, capOf) {
   const byS = new Map(cycles.map((c) => [c.s, c]));
   const lastS = cycles.length ? cycles[cycles.length - 1].s : 0;
-  // points per Turkey for `key` over the last k Turkeys (key = league name, or "m:<uid>")
-  return function pace(key, k) {
+  const get = (key, c) => (key.startsWith("m:") ? c.m && c.m[key.slice(2)] : c.p[key]);
+  // Points per Turkey for `key`, newest first. One player makes at most 1,000 per Turkey, so a team
+  // can't make more than 1,000 per member; when a Turkey shows more, the excess is points from earlier
+  // Turkeys that the API showed late, and it is moved back to the Turkey before (and so on).
+  const memo = new Map(), capped = new Set();
+  const series = (key) => {
+    if (memo.has(key)) return memo.get(key);
+    const out = [];
+    for (let i = 0; i < 80; i++) {
+      const a = byS.get(lastS - i * CYCLE), b = byS.get(lastS - (i + 1) * CYCLE);
+      const va = a && get(key, a), vb = b && get(key, b);
+      if (va == null || vb == null) break;
+      out.push(va - vb);
+    }
+    const cap = key.startsWith("m:") ? 1000 : capOf ? capOf(key) : null;
+    if (cap && out[0] > cap) capped.add(key);
+    if (cap) for (let i = 0; i < out.length - 1; i++) if (out[i] > cap) { out[i + 1] += out[i] - cap; out[i] = cap; }
+    memo.set(key, out);
+    return out;
+  };
+  // average points per Turkey for `key` over the last k Turkeys (key = league name, or "m:<uid>")
+  function pace(key, k) {
+    const s = series(key);
+    if (s.length >= k) return s.slice(0, k).reduce((a, b) => a + b, 0) / k;
     const cur = byS.get(lastS);
     if (!cur) return null;
-    const get = (c) => (key.startsWith("m:") ? c.m && c.m[key.slice(2)] : c.p[key]);
-    const v1 = get(cur);
+    const v1 = get(key, cur);
     if (v1 == null) return null;
     for (let back = k; back <= k + 3; back++) {
       const old = byS.get(lastS - back * CYCLE);
-      const v0 = old && get(old);
+      const v0 = old && get(key, old);
       if (v0 != null) return (v1 - v0) / back;
     }
     return null;
-  };
+  }
+  pace.capped = (key) => (series(key), capped.has(key)); // last Turkey had late points moved back
+  return pace;
 }
 
 function rankMap(points) {
@@ -266,7 +289,8 @@ export async function main() {
   const exact = (uid, c) => (c >= mtFrom ? (hist.mt.by[uid]?.[c] || 0) : undefined);
   if (hist.cycles.length > MAX_CYCLES) hist.cycles = hist.cycles.slice(-MAX_CYCLES);
   const cycles = hist.cycles;
-  const pace = makePace(cycles);
+  const memberCount = new Map(rows.map((r) => [r.n, r.m]));
+  const pace = makePace(cycles, (n) => (memberCount.get(n) ? 1000 * memberCount.get(n) : null));
   const lastS = cycles.length ? cycles[cycles.length - 1].s : s0;
   const startTime = season.startTime || (season.finishTime ? season.finishTime - 518400 : now);
   const turkeysElapsed = Math.max(1, Math.floor((now - startTime) / CYCLE));
@@ -277,7 +301,7 @@ export async function main() {
   // a full day of history exists.
   const teamStats = (n, p) => {
     const since = p / turkeysElapsed, h24 = pace(n, 72);
-    return { last: round(pace(n, 1)), h1: round(pace(n, 3)), h3: round(pace(n, 9)), h6: round(pace(n, 18)), h24: round(h24), since: round(since), proj: round(p + (h24 ?? since) * turkeysLeft) };
+    return { last: round(pace(n, 1)), lc: pace.capped(n) || undefined, h1: round(pace(n, 3)), h3: round(pace(n, 9)), h6: round(pace(n, 18)), h24: round(h24), since: round(since), proj: round(p + (h24 ?? since) * turkeysLeft) };
   };
   const rankAgo = (k) => {
     const c = cycles.find((x) => x.s === lastS - k * CYCLE);

@@ -537,12 +537,12 @@ const varName = (v) => v === "shinyRainbow" ? "Shiny Rainbow" : v === "shinyGold
 // above that, points from the Turkey before arrived late and landed in this one
 const lateCap = (r) => 1000 * (r.m || 4);
 function lastCell(r) {
-  const late = r.last != null && r.last > lateCap(r);
-  return `<td class="r num ${late ? "late" : r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}"${late ? ` title="Includes late points from the Turkey before"` : ""}>${k(r.last)}${late ? "*" : ""}</td>`;
+  const late = r.lc || (r.last != null && r.last > lateCap(r));
+  return `<td class="r num ${late ? "late" : r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}"${late ? ` title="Capped: the extra was late points from the Turkey before"` : ""}>${k(r.last)}${late ? "*" : ""}</td>`;
 }
 function lateNote(id, rows) {
-  const n = rows.filter((r) => r.last != null && r.last > lateCap(r)).length;
-  $(id).textContent = n ? `* More than 1,000 per player is impossible in one Turkey: these include points from the Turkey before that arrived late. Avg 3 smooths it out.` : "";
+  const n = rows.filter((r) => r.lc || (r.last != null && r.last > lateCap(r))).length;
+  $(id).textContent = n ? `* Capped at 1,000 per player. The API showed some of the Turkey before's points late, so the extra is counted in the Turkey it belongs to, in Last and in Avg 3.` : "";
 }
 function petIcon(item, size) {
   if (!item) return "";
