@@ -5,10 +5,10 @@ const PLACE_ID = 8737899170;
 export default async function handler(req, res) {
   const servers = [];
   let cursor = "", complete = false, status = 200;
-  for (let page = 0; page < 6; page++) {
+  for (let page = 0; page < 3; page++) { // Roblox allows about 3 pages in a row per IP
     if (page) await new Promise((ok) => setTimeout(ok, 800)); // Roblox rate limits quick bursts
     let r = null;
-    for (let tryN = 0; tryN < 2 && !r; tryN++) {
+    for (let tryN = 0; tryN < 1 && !r; tryN++) {
       try {
         const x = await fetch(`https://games.roblox.com/v1/games/${PLACE_ID}/servers/Public?sortOrder=Asc&limit=100${cursor ? "&cursor=" + encodeURIComponent(cursor) : ""}`);
         status = x.status;

@@ -111,6 +111,23 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mepin{position:absolute;top:58px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--caramel);border:3px solid var(--deep);box-shadow:0 0 0 2px var(--caramel);z-index:5;transition:left 1.1s cubic-bezier(.2,.9,.25,1.15)}
 .fin{position:absolute;top:8px;bottom:18px;width:0;border-left:3px dashed var(--caramel);z-index:2;transition:left .9s}
 .fin span{position:absolute;top:-4px;left:6px;white-space:nowrap;font:600 12px var(--text);color:var(--caramel)}
+/* Entrance hierarchy: reference (Titanic line) → field (dots sweep in left to right, same easing, no bounce)
+   → motion (trails of teams gaining on us draw out) → us (P4 drops onto its stem, the only overshoot). */
+.track .dot,.track .token,.track .mepin,.track .fin{transition:none}
+.track.enter .fin{animation:trkFin .5s cubic-bezier(.2,.8,.2,1) both}
+.track.enter .dot{animation:trkDot .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(180ms + var(--d,0ms))}
+.track.enter .dot:before{animation:trkTrail .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(560ms + var(--d,0ms))}
+.track.enter .token{animation:trkTok .6s cubic-bezier(.34,1.5,.5,1) both;animation-delay:820ms}
+.track.enter .token:after{animation:trkStem .3s cubic-bezier(.2,.8,.2,1) both;animation-delay:1050ms;transform-origin:top}
+.track.enter .mepin{animation:trkPin .3s cubic-bezier(.2,.8,.2,1) both;animation-delay:1250ms}
+.track.enter .token .tag{animation:trkFade .35s ease-out both;animation-delay:1250ms}
+@keyframes trkFin{from{opacity:0;transform:translateY(-6px)}}
+@keyframes trkDot{from{opacity:0;transform:scale(.2)}}
+@keyframes trkTrail{from{width:0}}
+@keyframes trkTok{from{opacity:0;transform:translateY(-18px) scale(.6)}}
+@keyframes trkStem{from{transform:scaleY(0)}}
+@keyframes trkPin{from{opacity:0;transform:scale(0)}}
+@keyframes trkFade{from{opacity:0}}
 .axis{position:absolute;left:0;right:0;bottom:0;height:14px;font-size:11px;color:var(--dim)}
 .axis span{position:absolute;transform:translateX(-50%)}
 
@@ -646,14 +663,15 @@ function renderHero(d) {
     const dv = rel(t), b = band(dv), near = crosses(t), tl = dv == null || dv <= 150 ? 0 : Math.round(Math.min(34, 5 + (dv / 800) * 29)); // trails only on teams gaining on us
     const eta = near ? Math.ceil(Math.abs(t.p - p.p) / Math.abs(dv)) : null;
     const tip = `#${t.r} ${esc(t.n)}, ${full(t.p)}${t.h1 != null ? `, ${full(t.h1)} per Turkey over the last hour (${dv >= 0 ? "+" : ""}${full(dv)} vs us)` : ""}${eta ? (t.p < p.p ? `, passes us in about ${eta} Turkeys` : `, we pass them in about ${eta} Turkeys`) : ""}`;
-    html += `<div class="dot ${b}${near ? " near" : b === "vm2" ? " far" : ""}" title="${tip}" style="left:${firstPaint ? 0 : x(t.p)}%;top:${59 + [0, -18, 18, -9, 9][i % 5]}px;--tl:${tl}px" data-x="${x(t.p)}"></div>`;
+    html += `<div class="dot ${b}${near ? " near" : b === "vm2" ? " far" : ""}" title="${tip}" style="left:${x(t.p)}%;top:${59 + [0, -18, 18, -9, 9][i % 5]}px;--tl:${tl}px;--d:${Math.round(x(t.p) * 4)}ms"></div>`;
   });
   $("trkKey").hidden = myH1 == null;
   if (c100) html += `<div class="fin" style="left:${x(c100.p)}%"><span style="${x(c100.p) > 70 ? "left:auto;right:6px" : ""}">Titanic line #100</span></div>`;
-  html += `<div class="mepin" style="left:${firstPaint ? 0 : x(p.p)}%" data-x="${x(p.p)}"></div><div class="token" style="left:${firstPaint ? 0 : x(p.p)}%" data-x="${x(p.p)}">P4<span class="tag${x(p.p) > 80 ? " l" : ""}">#${p.r}</span></div>`;
+  html += `<div class="mepin" style="left:${x(p.p)}%"></div><div class="token" style="left:${x(p.p)}%">P4<span class="tag${x(p.p) > 80 ? " l" : ""}">#${p.r}</span></div>`;
   const ticks = 4; html += '<div class="axis">' + Array.from({ length: ticks + 1 }, (_, i) => { const v = lo - pad + (hi - lo + 2 * pad) * i / ticks; return `<span style="left:${i * 100 / ticks}%">${k(v)}</span>`; }).join("") + "</div>";
   tr.innerHTML = html;
-  if (firstPaint) requestAnimationFrame(() => requestAnimationFrame(() => tr.querySelectorAll("[data-x]").forEach((el, i) => { el.style.transitionDelay = (el.classList.contains("token") || el.classList.contains("mepin") ? 250 : i * 6) + "ms"; el.style.left = el.dataset.x + "%"; })));
+  // entrance, once: the Titanic line, then the field sweeping in left to right, then the trails, then us
+  if (firstPaint) { tr.classList.add("enter"); setTimeout(() => tr.classList.remove("enter"), 2400); }
 }
 const cap = (s) => s === "shinyRainbow" ? "Shiny Rainbow" : s === "shinyGold" ? "Shiny Golden" : s === "golden" ? "Golden" : s.charAt(0).toUpperCase() + s.slice(1);
 

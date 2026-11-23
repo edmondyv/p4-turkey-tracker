@@ -36,10 +36,10 @@ const PLACE_ID = 8737899170;
 async function quietScanDirect() {
   const out = new Map();
   let cursor = "", complete = false;
-  for (let page = 0; page < 10; page++) {
-    if (page) await sleep(1000); // Roblox rate limits quick bursts
+  for (let page = 0; page < 3; page++) { // Roblox allows about 3 pages in a row per IP
+    if (page) await sleep(800);
     let r = null;
-    for (let tryN = 0; tryN < 2 && !r; tryN++) {
+    for (let tryN = 0; tryN < 1 && !r; tryN++) {
       try {
         const res = await fetch(`https://games.roblox.com/v1/games/${PLACE_ID}/servers/Public?sortOrder=Asc&limit=100${cursor ? "&cursor=" + encodeURIComponent(cursor) : ""}`, { headers: { "User-Agent": "p4-turkey-tracker/2.0 (github actions)" } });
         if (res.ok) r = await res.json();
@@ -577,7 +577,8 @@ export async function main() {
     }
     for (const [id, o] of Object.entries(hist.srv)) {
       // a full scan lists every server with <= 1 player, so one that's missing went above 1 or closed
-      if (o.last !== now && (scan.complete || now - o.last > 3600)) delete hist.srv[id];
+      // a partial scan (more than 300 quiet servers) may just not reach it: keep it 15 minutes
+      if (o.last !== now && (scan.complete || now - o.last > 900)) delete hist.srv[id];
     }
     const list = Object.entries(hist.srv).filter(([, o]) => o.last === now).sort((a, b) => a[1].since - b[1].since);
     hist.srvAt = now; hist.srvTotal = scan.servers.size;
