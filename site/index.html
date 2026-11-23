@@ -111,6 +111,28 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mepin{position:absolute;top:58px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--caramel);border:3px solid var(--deep);box-shadow:0 0 0 2px var(--caramel);z-index:5;transition:left 1.1s cubic-bezier(.2,.9,.25,1.15)}
 .fin{position:absolute;top:8px;bottom:18px;width:0;border-left:3px dashed var(--caramel);z-index:2;transition:left .9s}
 .fin span{position:absolute;top:-4px;left:6px;white-space:nowrap;font:600 12px var(--text);color:var(--caramel)}
+/* tap or hover a dot: a card about that team */
+.trk-wrap{position:relative}
+.track{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.dot.sel{transform:scale(1.55)!important;z-index:6;opacity:1;box-shadow:0 0 0 3px rgba(255,241,224,.28),0 0 12px var(--g)}
+.token.sel{box-shadow:0 4px 0 var(--deep),0 0 0 3px rgba(255,241,224,.3)}
+.trk-pop{position:absolute;z-index:20;width:236px;color:var(--ink);background:#2b1734;border:2px solid var(--line);border-radius:14px;box-shadow:0 5px 0 var(--deep);padding:10px 12px 11px;animation:popIn .16s cubic-bezier(.2,.8,.2,1)}
+.trk-pop[hidden]{display:none}
+.trk-pop:after{content:"";position:absolute;left:var(--ax,50%);width:10px;height:10px;margin-left:-6px;background:#2b1734;border:2px solid var(--line);transform:rotate(45deg)}
+.trk-pop.up:after{bottom:-7px;border-top:0;border-left:0}
+.trk-pop.down:after{top:-7px;border-bottom:0;border-right:0}
+@keyframes popIn{from{opacity:0;transform:translateY(4px)}}
+.tp-h{display:flex;align-items:center;gap:8px;font:600 15px var(--display)}
+.tp-h .li{width:22px;height:22px}
+.tp-h span{color:var(--mute);font:700 12px var(--text)}
+.tp-sub{font-size:12px;color:var(--mute);font-weight:600;margin-top:2px}
+.tp-sub b{color:var(--ink)}
+.tp-g{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.tp-g div{background:rgba(255,241,224,.06);border-radius:10px;padding:5px 7px}
+.tp-g small{display:block;font-size:10.5px;color:var(--dim);font-weight:700}
+.tp-g b{font:600 15px var(--display)}
+.tp-g em{display:block;font-style:normal;font-size:11px;font-weight:800}
+.tp-v{margin-top:8px;font-size:12.5px;font-weight:700;line-height:1.35}
 /* Entrance hierarchy: reference (Titanic line) → field (dots sweep in left to right, same easing, no bounce)
    → motion (trails of teams gaining on us draw out) → us (P4 drops onto its stem, the only overshoot). */
 .track .dot,.track .token,.track .mepin,.track .fin{transition:none}
@@ -433,7 +455,7 @@ footer a{color:var(--mute)}
         </div>
         <div class="prize" id="prize"><div class="medal h">H</div><div><b>–</b><small>Current reward</small></div></div>
       </div>
-      <div class="track" id="track" aria-hidden="true"><div class="lane"></div></div>
+      <div class="trk-wrap" id="trkWrap"><div class="track" id="track"><div class="lane"></div></div><div class="trk-pop" id="trkPop" hidden aria-live="polite"></div></div>
       <div class="trk-key" id="trkKey" hidden><span style="--c:#ff8a3d"><i></i>much faster</span><span style="--c:#ffe45c"><i></i>faster</span><span style="--c:#c9a6ec"><i></i>same pace</span><span style="--c:#8d8297"><i></i>slower</span><span><i class="ful"></i>filled: crosses us before the end</span><span><i class="hol"></i>hollow: doesn't</span></div>
       
       <div class="ladder" id="ladder" aria-label="Rewards by place"></div>
@@ -663,16 +685,71 @@ function renderHero(d) {
     const dv = rel(t), b = band(dv), near = crosses(t), tl = dv == null || dv <= 150 ? 0 : Math.round(Math.min(34, 5 + (dv / 800) * 29)); // trails only on teams gaining on us
     const eta = near ? Math.ceil(Math.abs(t.p - p.p) / Math.abs(dv)) : null;
     const tip = `#${t.r} ${esc(t.n)}, ${full(t.p)}${t.h1 != null ? `, ${full(t.h1)} per Turkey over the last hour (${dv >= 0 ? "+" : ""}${full(dv)} vs us)` : ""}${eta ? (t.p < p.p ? `, passes us in about ${eta} Turkeys` : `, we pass them in about ${eta} Turkeys`) : ""}`;
-    html += `<div class="dot ${b}${near ? " near" : b === "vm2" ? " far" : ""}" title="${tip}" style="left:${x(t.p)}%;top:${59 + [0, -18, 18, -9, 9][i % 5]}px;--tl:${tl}px;--d:${Math.round(x(t.p) * 4)}ms"></div>`;
+    html += `<div class="dot ${b}${near ? " near" : b === "vm2" ? " far" : ""}" data-n="${esc(t.n)}" style="left:${x(t.p)}%;top:${59 + [0, -18, 18, -9, 9][i % 5]}px;--tl:${tl}px;--d:${Math.round(x(t.p) * 4)}ms"></div>`;
   });
   $("trkKey").hidden = myH1 == null;
   if (c100) html += `<div class="fin" style="left:${x(c100.p)}%"><span style="${x(c100.p) > 70 ? "left:auto;right:6px" : ""}">Titanic line #100</span></div>`;
   html += `<div class="mepin" style="left:${x(p.p)}%"></div><div class="token" style="left:${x(p.p)}%">P4<span class="tag${x(p.p) > 80 ? " l" : ""}">#${p.r}</span></div>`;
   const ticks = 4; html += '<div class="axis">' + Array.from({ length: ticks + 1 }, (_, i) => { const v = lo - pad + (hi - lo + 2 * pad) * i / ticks; return `<span style="left:${i * 100 / ticks}%">${k(v)}</span>`; }).join("") + "</div>";
   tr.innerHTML = html;
+  if (trkSel) trkShow(trkSel, trkPinned); // keep an open card in sync with fresh data
   // entrance, once: the Titanic line, then the field sweeping in left to right, then the trails, then us
   if (firstPaint) { tr.classList.add("enter"); setTimeout(() => tr.classList.remove("enter"), 2400); }
 }
+// ---------- race track: tap (or hover with a mouse) a dot for a card about that team
+let trkSel = null, trkPinned = false;
+const trkPace = (dv) => (dv == null ? "" : dv > 300 ? "#ff8a3d" : dv > 150 ? "#ffe45c" : dv >= -150 ? "#c9a6ec" : "#a59bb0");
+function trkCard(t) {
+  const d = D, me = d.track.find((x) => x.me) || {}, p = d.p4, left = d.season.turkeysLeft || 0;
+  const myH1 = me.h1 ?? p.h1, dv = t.me || myH1 == null || t.h1 == null ? null : t.h1 - myH1, gap = t.p - p.p;
+  const tt = (n) => { const m = n * 20; return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? " " + String(m % 60).padStart(2, "0") : ""}`; };
+  let verdict = "", vc = "var(--mute)";
+  if (t.me) {
+    const c100 = d.marks.find((m) => m.r === 100);
+    verdict = c100 ? (p.p >= c100.p ? `In the top 100, ${k(p.p - c100.p)} above the Titanic line.` : `${k(c100.p - p.p)} below the Titanic line.`) : "";
+  } else if (dv != null) {
+    const eta = gap < 0 && dv > 0 ? Math.ceil(-gap / dv) : gap > 0 && dv < 0 ? Math.ceil(gap / -dv) : null;
+    if (gap < 0) { verdict = dv > 0 ? (eta <= left ? `Catches us in about ${eta} Turkeys (${tt(eta)}).` : "Faster than us, but won't catch us before the end.") : "Not catching up."; vc = dv > 0 && eta <= left ? "#ff8a3d" : dv > 0 ? "#ffe45c" : "var(--mute)"; }
+    else { verdict = dv < 0 ? (eta <= left ? `We pass them in about ${eta} Turkeys (${tt(eta)}).` : "We're faster, but won't pass them before the end.") : dv > 0 ? "Pulling away from us." : "Holding the gap."; vc = dv < 0 && eta <= left ? "var(--leaf)" : "var(--mute)"; }
+  }
+  return `<div class="tp-h">${leagueIcon(t.icon)}<div>${esc(t.n)} <span>#${t.r}</span></div></div>
+    <div class="tp-sub"><b class="num">${full(t.p)}</b> points${t.me ? "" : `, ${gap >= 0 ? `<b class="num">${k(gap)}</b> ahead of us` : `<b class="num">${k(-gap)}</b> behind us`}`}</div>
+    <div class="tp-g"><div><small>Avg 3</small><b class="num">${k(t.h1)}</b>${dv != null ? `<em style="color:${trkPace(dv)}">${dv >= 0 ? "+" : "−"}${k(Math.abs(dv))}</em>` : ""}</div>
+      <div><small>Last</small><b class="num">${k(t.last)}${t.lc ? "*" : ""}</b></div><div><small>Avg 3 h</small><b class="num">${k(t.h3)}</b></div></div>
+    ${verdict ? `<div class="tp-v" style="color:${vc}">${verdict}</div>` : ""}`;
+}
+function trkShow(name, pin) {
+  const wrap = $("trkWrap"), pop = $("trkPop"), tr = $("track"), t = D && D.track.find((x) => x.n === name);
+  const el = t && (t.me ? tr.querySelector(".token") : [...tr.querySelectorAll(".dot")].find((x) => x.dataset.n === name));
+  if (!el) return trkHide();
+  trkSel = name; trkPinned = !!pin;
+  tr.querySelectorAll(".sel").forEach((x) => x.classList.remove("sel")); el.classList.add("sel");
+  pop.innerHTML = trkCard(t); pop.hidden = false;
+  const wr = wrap.getBoundingClientRect(), er = el.getBoundingClientRect(), cx = er.left + er.width / 2 - wr.left;
+  const w = pop.offsetWidth, hgt = pop.offsetHeight, lft = Math.max(0, Math.min(wr.width - w, cx - w / 2));
+  const hero = wrap.closest(".hero") || wrap, hr = hero.getBoundingClientRect();
+  const up = er.top - hr.top - hgt - 12 >= 8; // the hero has room over the track; open downwards only if it doesn't
+  pop.style.left = lft + "px"; pop.style.setProperty("--ax", Math.max(14, Math.min(w - 14, cx - lft)) + "px");
+  pop.style.top = (up ? er.top - wr.top - hgt - 12 : er.bottom - wr.top + 12) + "px";
+  pop.classList.toggle("up", up); pop.classList.toggle("down", !up);
+}
+function trkHide() { trkSel = null; trkPinned = false; $("trkPop").hidden = true; $("track").querySelectorAll(".sel").forEach((x) => x.classList.remove("sel")); }
+function trkNearest(ev, maxPx) { // dots are small, so pick the closest one to the finger
+  const tr = $("track"); let best = null, bd = maxPx;
+  [...tr.querySelectorAll(".dot"), tr.querySelector(".token")].forEach((el) => {
+    if (!el) return; const r = el.getBoundingClientRect(), dd = Math.hypot(ev.clientX - (r.left + r.width / 2), ev.clientY - (r.top + r.height / 2)) - (el.classList.contains("token") ? 14 : 0);
+    if (dd < bd) { bd = dd; best = el; }
+  });
+  return best ? (best.classList.contains("token") ? LEAGUE_NAME() : best.dataset.n) : null;
+}
+const LEAGUE_NAME = () => (D && (D.track.find((x) => x.me) || {}).n) || "P4";
+$("track").addEventListener("click", (ev) => { const n = trkNearest(ev, 28); if (!n || (n === trkSel && trkPinned)) return trkHide(); trkShow(n, true); ev.stopPropagation(); });
+$("track").addEventListener("pointermove", (ev) => { if (ev.pointerType !== "mouse" || trkPinned) return; const n = trkNearest(ev, 16); if (n) { if (n !== trkSel) trkShow(n, false); } else if (trkSel) trkHide(); });
+$("track").addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse" && !trkPinned) trkHide(); });
+document.addEventListener("click", (ev) => { if (trkSel && !$("trkWrap").contains(ev.target)) trkHide(); });
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && trkSel) trkHide(); });
+window.addEventListener("resize", () => { if (trkSel) trkShow(trkSel, trkPinned); });
+
 const cap = (s) => s === "shinyRainbow" ? "Shiny Rainbow" : s === "shinyGold" ? "Shiny Golden" : s === "golden" ? "Golden" : s.charAt(0).toUpperCase() + s.slice(1);
 
 function renderSquad(d) {

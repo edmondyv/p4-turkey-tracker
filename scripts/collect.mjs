@@ -434,7 +434,8 @@ export async function main() {
     });
     // race track: from the top-100 line down to a little below P4
     const lo = Math.max(myR + 8, 108), hi = Math.min(92, myR - 4);
-    track = rows.filter((r) => r.r >= hi && r.r <= lo).map((r) => ({ r: r.r, n: r.n, p: r.p, icon: r.icon, h1: round(pace(r.n, 3)), me: r.n === LEAGUE }));
+    track = rows.filter((r) => r.r >= hi && r.r <= lo).map((r) => ({ r: r.r, n: r.n, p: r.p, m: r.m, icon: r.icon,
+      last: round(pace(r.n, 1)), lc: pace.capped(r.n) || undefined, h1: round(pace(r.n, 3)), h3: round(pace(r.n, 9)), me: r.n === LEAGUE }));
     if (!track.some((t) => t.me)) track.push({ r: p4.place, n: LEAGUE, p: p4.points, h1: round(pace(LEAGUE, 3)), me: true });
 
     // ---------- alerts (one grouped message per run)
