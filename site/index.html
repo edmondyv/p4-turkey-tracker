@@ -194,8 +194,15 @@ button{font:inherit;color:inherit;cursor:pointer}
 .bars{display:flex;gap:2px;align-items:flex-end;height:18px;margin-top:3px}
 /* tiers, shared by the team strip and the player bars */
 :root{--t-ep:#ff2bd6;--t-hi:#5cc8e0;--t-ok:var(--leaf);--t-pt:var(--caramel)} /* flat, like the rest of the site: the hue carries the tier */
+/* gold, the top tier (3.6k+ a team, 900+ a player): brushed gold with fine grain and a slow sheen, no glow */
+:root{--grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.25 0 0 0 0 0.16 0 0 0 0 0.02 0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --gold:linear-gradient(110deg,#b98a2c 0%,#e3bd5c 18%,#fff0bf 32%,#ecc96a 46%,#bf8f2e 62%,#f1d27c 80%,#b98a2c 100%)}
+.gold{background:var(--grain),var(--gold);background-size:90px 90px,260% 100%;background-position:0 0,0% 50%;animation:goldSheen 7s linear infinite;box-shadow:inset 0 0 0 1px rgba(255,236,180,.35)}
+@keyframes goldSheen{to{background-position:0 0,260% 50%}}
+@media (prefers-reduced-motion:reduce){.gold{animation:none}}
 .bars i{display:block;width:6px;border-radius:2px;background:var(--t-ok)}
 .bars i.hi{background:var(--t-hi)} .bars i.ep{background:var(--t-ep)} .bars i.pt{background:var(--t-pt)}
+.bars i.au{background:var(--gold);background-size:260% 100%}
 .bars i.z{background:var(--apple);height:3px!important;opacity:1}
 .bars i.n{background:var(--line);height:3px!important}
 .mem .p{font:600 16px var(--display);text-align:right;align-self:start}
@@ -355,6 +362,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .strip div{border-radius:5px 5px 2px 2px;background:var(--t-ok);position:relative;min-height:4px;transition:height .6s}
 .strip div.hi{background:var(--t-hi)}
 .strip div.ep{background:var(--t-ep)}
+.strip div.gold{background:var(--grain),var(--gold);background-size:90px 90px,260% 100%}
+.strip div.au span{color:#f6dd8f}
 .strip div.half{background:var(--t-pt)} .strip div.zero{background:var(--apple)} .strip div.na{background:var(--line)}
 .strip div span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font:600 10px var(--text);color:var(--mute);margin-bottom:2px;letter-spacing:-.2px}
 @media (max-width:420px){.strip div span{font-size:9px}}
@@ -407,6 +416,7 @@ tr.cut td{border-top:2px dashed var(--caramel)}
 @media (max-width:680px){.hide-s{display:none}}
 td.late{color:var(--dim)}
 .tpill{display:inline-block;min-width:46px;padding:2px 7px;border-radius:7px;color:var(--ink);font-weight:700;text-align:center}
+.tpill.t-au{color:#2b1a05;font-weight:800}
 .tpill.t-ep{background:rgba(255,43,214,.55)} .tpill.t-hi{background:rgba(92,200,224,.45)} .tpill.t-ok{background:rgba(124,203,78,.42)} .tpill.t-pt{background:rgba(246,169,59,.4)} .tpill.t-z{background:rgba(240,69,79,.5)}
 .tnote{font-size:11.5px;color:var(--dim);font-weight:600;margin-top:6px;line-height:1.4}
 .tnote:empty{display:none}
@@ -518,7 +528,7 @@ footer{align-items:center}
         <div><b class="num" id="hLeft">–</b><small>Until the end</small></div>
         <div><b class="num" id="thisT">–</b><small id="thisTl">This Turkey so far</small></div>
       </div>
-      <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px"><span>Our last 15 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:var(--t-ep)"></i>3.4k+</span><span><i style="background:var(--t-hi)"></i>2.4k+</span><span><i style="background:var(--t-ok)"></i>2k+</span><span><i style="background:var(--t-pt)"></i>less</span><span><i style="background:var(--apple)"></i>0</span></span></div>
+      <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px"><span>Our last 15 Turkeys</span><span class="legend" style="margin:0"><span><i class="gold"></i>3.6k+</span><span><i style="background:var(--t-ep)"></i>3.4k+</span><span><i style="background:var(--t-hi)"></i>2.4k+</span><span><i style="background:var(--t-ok)"></i>2k+</span><span><i style="background:var(--t-pt)"></i>less</span><span><i style="background:var(--apple)"></i>0</span></span></div>
       <div class="strip" id="strip" title="Team points on each Turkey"></div>
       <div class="lands" id="lands"></div>
     </section>
@@ -638,8 +648,8 @@ const lateCap = (r) => 1000 * (r.m || 4);
 // Avg 3 as a pill in the team tier colours (same thresholds as our Turkey strip, scaled to team size)
 function tierPill(v, m) {
   if (v == null) return "–";
-  const f = (m || 4) / 4, t = v <= 0 ? "z" : v >= 3400 * f ? "ep" : v >= 2400 * f ? "hi" : v >= 1950 * f ? "ok" : "pt";
-  return `<span class="tpill t-${t}">${k(v)}</span>`;
+  const f = (m || 4) / 4, t = v <= 0 ? "z" : v >= 3600 * f ? "au" : v >= 3400 * f ? "ep" : v >= 2400 * f ? "hi" : v >= 1950 * f ? "ok" : "pt";
+  return `<span class="tpill t-${t}${t === "au" ? " gold" : ""}">${k(v)}</span>`;
 }
 function lastCell(r) {
   const late = r.lc || (r.last != null && r.last > lateCap(r));
@@ -803,7 +813,7 @@ function renderSquad(d) {
       prevStreak[u] = s;
       const presTxt = pr ? (pr.type === 2 ? "in game" : pr.type === 1 ? "online" : "status hidden") : "";
       const tk = (m.turkeys || []).slice(-12), mx = Math.max(700, ...tk.filter((v) => v != null));
-      const bars = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i class="${v >= 850 ? "ep" : v >= 600 ? "hi" : v >= 400 ? "" : "pt"}" style="height:${Math.max(4, 18 * v / mx)}px" title="${full(v)}"></i>`).join("");
+      const bars = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i class="${v >= 900 ? "au" : v >= 850 ? "ep" : v >= 600 ? "hi" : v >= 400 ? "" : "pt"}" style="height:${Math.max(4, 18 * v / mx)}px" title="${full(v)}"></i>`).join("");
       const lastV = tk.length ? tk[tk.length - 1] : null, liveV = d.p4.thisTurkey && d.p4.thisTurkey.per ? d.p4.thisTurkey.per[u] : null;
       const av = P && P.avatars && P.avatars[u];
       const dot = av ? `<span class="ava"><img src="${av}" alt="" loading="lazy"><span class="st ${status[0]}"></span></span>` : `<span class="st ${status[0]}" title="${presTxt}"></span>`;
@@ -850,7 +860,7 @@ function renderPace(d) {
   $("thisTl").textContent = tt.s ? `${hm(tt.s)} Turkey, ${nIn}/4 scored` : "This Turkey so far";
   const tk = (p.turkeys || []).slice(-15), full2 = 2000;
   const smax = Math.max(2500, ...tk.map((t) => t.pts || 0));
-  $("strip").innerHTML = tk.map((t) => { const v = t.pts; const cls = v == null ? "na" : v <= 0 ? "zero" : v >= 3400 ? "ep" : v >= 2400 ? "hi" : v >= 1950 ? "" : "half"; // under ~2k is a bad Turkey
+  $("strip").innerHTML = tk.map((t) => { const v = t.pts; const cls = v == null ? "na" : v <= 0 ? "zero" : v >= 3600 ? "au gold" : v >= 3400 ? "ep" : v >= 2400 ? "hi" : v >= 1950 ? "" : "half"; // under ~2k is a bad Turkey
     return `<div class="${cls}" style="height:${v == null ? 4 : Math.max(4, v / smax * 44)}px" title="${hm(t.s)} Turkey: ${v == null ? "no data" : full(v)}">${v != null ? `<span>${(v / 1000).toFixed(1)}</span>` : ""}</div>`; }).join("");
 }
 
