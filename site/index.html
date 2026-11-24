@@ -229,7 +229,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mem2 .offb b{display:block;font:700 12.5px var(--text);color:#e98d97;white-space:nowrap;line-height:1.35}
 .mem2 .offb b.dim{color:var(--dim)}
 .mem2 .bars{display:flex;gap:3px;align-items:flex-end;height:26px;margin-top:10px}
-.mem2 .bars i{flex:1;width:auto;border-radius:3px 3px 1px 1px}
+.mem2 .bars .s{flex:1;height:100%;display:flex;align-items:flex-end;border-radius:4px;background:rgba(255,241,224,.07);overflow:hidden}
+.mem2 .bars .s i{width:100%;border-radius:0}
 
 /* solo event: hidden until the apple is tapped 10 times */
 .apple{touch-action:manipulation;user-select:none;-webkit-user-select:none}
@@ -846,10 +847,10 @@ function renderSquad(d) {
       const nowCell = liveV ? `<b class="up">+${full(liveV)}</b>` : `<b class="dim">–</b>`;
       const lastCell2 = lastV == null ? `<b class="dim">–</b>` : lastV <= 0 ? `<b class="bad">0</b>` : `<b>${full(lastV)}</b>`;
       const offCell = m.off == null ? "" : m.off ? `<b>${offTxt} offline</b><span><i class="lg">${m.off} Turkey${m.off === 1 ? "" : "s"} missed</i><i class="sm">${m.off} missed</i></span>` : `<b class="dim">Never offline</b><span>0 missed</span>`;
-      const bars2 = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i class="${v >= 900 ? "au" : v >= 800 ? "ep" : v >= 600 ? "hi" : v >= 400 ? "" : "pt"}" style="height:${Math.max(12, 100 * Math.min(v, 1000) / 1000)}%" title="${full(v)}"></i>`).join("");
+      const bars2 = tk.map((v) => `<span class="s" title="${v == null ? "no data" : full(Math.max(0, v))}">${v == null ? "" : v <= 0 ? '<i class="z"></i>' : `<i class="${v >= 900 ? "au" : v >= 800 ? "ep" : v >= 600 ? "hi" : v >= 400 ? "" : "pt"}" style="height:${Math.max(8, 100 * Math.min(v, 1000) / 1000)}%"></i>`}</span>`).join("");
       return `<div class="mem2"><div class="hd">${dot}<div class="who"><b>${esc(m.name)}</b><small>${st}</small></div><div class="tot num">${k(m.points)}<small>total</small></div></div>` +
         `<div class="stats"><div class="offb" title="${offTip}">${offCell}</div><div class="nb">${lastCell2}<span><i class="lg">last Turkey</i><i class="sm">last</i></span></div><div class="nb">${nowCell}<span><i class="lg">this Turkey</i><i class="sm">now</i></span></div></div>` +
-        `<div class="bars" title="Points on each of the last 12 Turkeys, oldest on the left">${bars2}</div></div>`;
+        `<div class="bars" title="Points on each of the last 12 Turkeys, oldest on the left. A full bar is 1,000.">${bars2}</div></div>`;
     }).join("");
     return `<div class="pair">${rows}</div>`;
   }).join("");
