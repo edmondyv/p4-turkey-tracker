@@ -209,6 +209,25 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mem .p{font:600 16px var(--display);text-align:right;align-self:start}
 .mem small.lt{color:var(--mute)} .mem small.lt b{color:var(--ink);display:inline;font-weight:700} .mem small.lt b.hiv{color:#8fe3f5} .mem small.lt b.epv{color:#ff5fe0} .mem small.lt b.up{color:var(--leaf)}
 .mem .p small{font:600 11px var(--text)}
+/* squad card v2: fixed rows so every player reads the same way */
+.mem2{padding:2px 0;container-type:inline-size}
+.mem2 .sm{display:none}
+@container (max-width:300px){.mem2 .lg{display:none}.mem2 .sm{display:inline}.mem2 div.stats{grid-template-columns:minmax(0,.8fr) minmax(0,.8fr) minmax(0,1.4fr)}}
+.mem2 .hd{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.mem2 .who{min-width:0}
+.mem2 .who b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mem2 .who small{display:block;font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mem2 .tot{text-align:right;font:600 17px var(--display);line-height:1.1}
+.mem2 .tot small{display:block;font:600 11px var(--text);color:var(--mute)}
+.mem2 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:9px;padding-top:8px;border-top:1px solid var(--line)}
+.mem2 .stats>div{min-width:0;padding:0 8px;border-left:1px solid var(--line)}
+.mem2 .stats>div:first-child{padding-left:0;border-left:0}
+.mem2 .stats b{display:block;font:600 16px var(--display);white-space:nowrap;line-height:1.2}
+.mem2 .stats span i{font-style:normal}
+.mem2 .stats span{display:block;font-size:11px;font-weight:600;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mem2 .stats b.up{color:var(--leaf)} .mem2 .stats b.bad{color:var(--apple)} .mem2 .stats b.dim{color:var(--dim)}
+.mem2 .bars{display:flex;gap:3px;align-items:flex-end;height:26px;margin-top:10px}
+.mem2 .bars i{flex:1;width:auto;border-radius:3px 3px 1px 1px}
 
 /* solo event: hidden until the apple is tapped 10 times */
 .apple{touch-action:manipulation;user-select:none;-webkit-user-select:none}
@@ -820,8 +839,15 @@ function renderSquad(d) {
       const av = P && P.avatars && P.avatars[u];
       const dot = av ? `<span class="ava"><img src="${av}" alt="" loading="lazy"><span class="st ${status[0]}"></span></span>` : `<span class="st ${status[0]}" title="${presTxt}"></span>`;
       const offMin = (m.off || 0) * 20, offTxt = !offMin ? "0 h" : offMin < 60 ? `${offMin} min` : `${Math.floor(offMin / 60)} h${offMin % 60 ? " " + String(offMin % 60).padStart(2, "0") : ""}`;
-      const offTag = m.off != null ? `<span class="off${m.off ? "" : " none"}" title="Time without scoring since ${d.p4.offFrom ? hm(d.p4.offFrom) + " " + new Date(d.p4.offFrom * 1000).toLocaleDateString("en-GB", { weekday: "short", timeZone: TZ }) : "tracking started"}. ${m.offBefore ? ` Includes ${Math.floor(m.offBefore * 20 / 60)} h ${String(m.offBefore * 20 % 60).padStart(2, "0")} from before tracking.` : ""} Not counted: Turkeys nobody scored, and misses caused by a teammate who was out longer.">offline ${offTxt}${m.off ? ` <i>${m.off} Turkey${m.off === 1 ? "" : "s"}</i>` : ""}</span>` : "";
-      return `<div class="mem">${dot}<div><div class="nmr"><b>${esc(m.name)}</b>${offTag}</div><small>${status[1]}</small>${lastV != null || liveV ? `<small class="lt">${lastV != null ? `Last Turkey <b>${full(lastV)}</b>` : ""}${liveV ? `${lastV != null ? ", " : ""}now <b class="up">+${full(liveV)}</b>` : ""}</small>` : ""}<div class="bars" title="Points on each of the last 12 Turkeys">${bars}</div></div><div class="p num">${k(m.points)}</div></div>`;
+      const offTip = `Time without scoring since ${d.p4.offFrom ? hm(d.p4.offFrom) + " " + new Date(d.p4.offFrom * 1000).toLocaleDateString("en-GB", { weekday: "short", timeZone: TZ }) : "tracking started"}.${m.offBefore ? ` Includes ${Math.floor(m.offBefore * 20 / 60)} h ${String(m.offBefore * 20 % 60).padStart(2, "0")} from before tracking.` : ""} Not counted: Turkeys nobody scored, and misses caused by a teammate who was out longer.`;
+      const st = s == null ? "No points yet" : s === 0 ? `<span class="up">Scored</span> ${m.lastAt ? hm(m.lastAt) : "?"}` : `<span class="bad-t">Missed ${s}</span>, last ${m.lastAt ? hm(m.lastAt) : "?"}`;
+      const nowCell = liveV ? `<b class="up">+${full(liveV)}</b>` : `<b class="dim">–</b>`;
+      const lastCell2 = lastV == null ? `<b class="dim">–</b>` : lastV <= 0 ? `<b class="bad">0</b>` : `<b>${full(lastV)}</b>`;
+      const offCell = m.off == null ? `<b class="dim">–</b><span>offline</span>` : m.off ? `<b class="bad">${offTxt}</b><span>${m.off} missed</span>` : `<b class="dim">0 h</b><span>none missed</span>`;
+      const bars2 = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i class="${v >= 900 ? "au" : v >= 800 ? "ep" : v >= 600 ? "hi" : v >= 400 ? "" : "pt"}" style="height:${Math.max(12, 100 * Math.min(v, 1000) / 1000)}%" title="${full(v)}"></i>`).join("");
+      return `<div class="mem2"><div class="hd">${dot}<div class="who"><b>${esc(m.name)}</b><small>${st}</small></div><div class="tot num">${k(m.points)}<small>total</small></div></div>` +
+        `<div class="stats"><div>${nowCell}<span><i class="lg">this Turkey</i><i class="sm">now</i></span></div><div>${lastCell2}<span><i class="lg">last Turkey</i><i class="sm">last</i></span></div><div title="${offTip}">${offCell}</div></div>` +
+        `<div class="bars" title="Points on each of the last 12 Turkeys, oldest on the left">${bars2}</div></div>`;
     }).join("");
     return `<div class="pair">${rows}</div>`;
   }).join("");
