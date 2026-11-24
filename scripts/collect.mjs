@@ -395,7 +395,7 @@ export async function main() {
     // Two players with exactly the same streak both count: we can't tell who caused it.
     {
       const OFF_BEFORE = { 3083204118: 13, 6079067379: 21 }; // Panda 4 h 20, Lego 7 h, before tracking began
-      const NOT_THEIRS = { 3083204118: [Date.UTC(2026, 10, 23, 8, 0) / 1000] }; // Panda, 09:00 Mon: Ed was in a meeting (pair)
+      const NOT_THEIRS = { 3083204118: [Date.UTC(2026, 10, 23, 8, 0) / 1000], 216657469: [Date.UTC(2026, 10, 24, 13, 20) / 1000] }; // Panda, 09:00 Mon: Ed was in a meeting (pair). Ed, 14:20 Tue: his alt went to help Lego
       const ids = Object.keys(SQUAD), got = (u, c) => hist.mt.by[u]?.[c] > 0, allMiss = (c) => ids.every((v) => !got(v, c)), runs = {};
       for (const u of ids) {
         runs[u] = []; let cur = null;
