@@ -355,7 +355,6 @@ button{font:inherit;color:inherit;cursor:pointer}
 .strip div{border-radius:5px 5px 2px 2px;background:var(--t-ok);box-shadow:0 0 4px rgba(124,203,78,.22),inset 0 1px 0 rgba(255,255,255,.25);position:relative;min-height:4px;transition:height .6s}
 .strip div.hi{background:var(--t-hi);box-shadow:0 0 8px rgba(92,200,224,.45),inset 0 1px 0 rgba(255,255,255,.4)}
 .strip div.ep{background:var(--t-ep);box-shadow:0 0 6px #ff3ddc,0 0 16px rgba(255,31,208,.75),inset 0 1px 0 rgba(255,255,255,.55)}
-.strip div.hi span{color:#9aebfa} .strip div.ep span{color:#ff6cf0;font-weight:800;text-shadow:0 0 8px rgba(255,31,208,.7)}
 .strip div.half{background:var(--t-pt);box-shadow:inset 0 1px 0 rgba(255,255,255,.25)} .strip div.zero{background:var(--apple);box-shadow:none} .strip div.na{background:var(--line);box-shadow:none}
 .strip div span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font:600 10px var(--text);color:var(--mute);margin-bottom:2px;letter-spacing:-.2px}
 @media (max-width:420px){.strip div span{font-size:9px}}
@@ -802,7 +801,7 @@ function renderSquad(d) {
       const dot = av ? `<span class="ava"><img src="${av}" alt="" loading="lazy"><span class="st ${status[0]}"></span></span>` : `<span class="st ${status[0]}" title="${presTxt}"></span>`;
       const offMin = (m.off || 0) * 20, offTxt = !offMin ? "0 h" : offMin < 60 ? `${offMin} min` : `${Math.floor(offMin / 60)} h${offMin % 60 ? " " + String(offMin % 60).padStart(2, "0") : ""}`;
       const offTag = m.off != null ? `<span class="off${m.off ? "" : " none"}" title="Time without scoring since ${d.p4.offFrom ? hm(d.p4.offFrom) + " " + new Date(d.p4.offFrom * 1000).toLocaleDateString("en-GB", { weekday: "short", timeZone: TZ }) : "tracking started"}. ${m.offBefore ? ` Includes ${Math.floor(m.offBefore * 20 / 60)} h ${String(m.offBefore * 20 % 60).padStart(2, "0")} from before tracking.` : ""} Not counted: Turkeys nobody scored, and misses caused by a teammate who was out longer.">offline ${offTxt}</span>` : "";
-      return `<div class="mem">${dot}<div><div class="nmr"><b>${esc(m.name)}</b>${offTag}</div><small>${status[1]}</small>${lastV != null || liveV ? `<small class="lt">${lastV != null ? `Last Turkey <b class="${lastV > 850 ? "epv" : lastV >= 600 ? "hiv" : ""}">${full(lastV)}</b>` : ""}${liveV ? `${lastV != null ? ", " : ""}now <b class="up">+${full(liveV)}</b>` : ""}</small>` : ""}<div class="bars" title="Points on each of the last 12 Turkeys">${bars}</div></div><div class="p num">${k(m.points)}</div></div>`;
+      return `<div class="mem">${dot}<div><div class="nmr"><b>${esc(m.name)}</b>${offTag}</div><small>${status[1]}</small>${lastV != null || liveV ? `<small class="lt">${lastV != null ? `Last Turkey <b>${full(lastV)}</b>` : ""}${liveV ? `${lastV != null ? ", " : ""}now <b class="up">+${full(liveV)}</b>` : ""}</small>` : ""}<div class="bars" title="Points on each of the last 12 Turkeys">${bars}</div></div><div class="p num">${k(m.points)}</div></div>`;
     }).join("");
     return `<div class="pair">${rows}</div>`;
   }).join("");
