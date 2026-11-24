@@ -522,9 +522,9 @@ footer{align-items:center}
       <header><h2>Squad</h2><span class="mute" id="squadNote">Checked on every Turkey</span></header>
       <div class="pairs" id="pairs"></div>
       <div class="alt" id="altCalc">
-        <div class="alt-h"><h3>Alt timer</h3><span class="mute">Turkey: 3.5B HP, alive 15:00. Both hit from the start.</span></div>
+        <div class="alt-h"><h3>Alt timer</h3><span class="mute">Turkey: 7B HP, alive 15:00. Both hit from the start.</span></div>
         <div class="alt-in">
-          <label>Main DPS<span class="f"><input id="acM" inputmode="decimal" autocomplete="off" value="3.46"><i>M</i></span></label>
+          <label>Main DPS<span class="f"><input id="acM" inputmode="decimal" autocomplete="off" value="6.35"><i>M</i></span></label>
           <label>Alt DPS<span class="f"><input id="acA" inputmode="decimal" autocomplete="off" value="2.43"><i>M</i></span></label>
         </div>
         <div class="alt-tip">Read both DPS after 1 to 2 minutes of hitting. The game shows an average since the fight started, so the first seconds are off, and lower if you started late.</div>
@@ -1124,7 +1124,7 @@ function setSolo(on, fromTap) {
 // ---------- alt timer: when should the alt leave so the main keeps the biggest share?
 // Points are split by damage, so every second the alt hits costs the main. Both hit from the
 // start; the alt stays just long enough for the Turkey to die with the chosen time to spare.
-const AC = ["acM", "acA"], TURKEY_HP = 3.5e9, TURKEY_LIFE = 900;
+const AC = ["acM", "acA"], TURKEY_HP = 7e9, TURKEY_LIFE = 900;
 const numIn = (v, big, unit) => { const x = parseFloat(String(v).replace(",", ".").replace(/[^0-9.]/g, "")); return isFinite(x) && x > 0 ? (x >= big ? x : x * unit) : null; };
 const mmss = (t) => { t = Math.max(0, Math.round(t)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
 function altCalc() {
