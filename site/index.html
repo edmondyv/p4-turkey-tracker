@@ -193,11 +193,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mem .bad-t{color:var(--apple);font-weight:700}
 .bars{display:flex;gap:2px;align-items:flex-end;height:18px;margin-top:3px}
 .bars i{display:block;width:6px;border-radius:2px;background:var(--leaf);opacity:.9}
-.bars i.hi{background:#5cc8e0} .bars i.ep{background:#9d6bff} .bars i.pt{background:var(--caramel)}
+.bars i.hi{background:#5cc8e0} .bars i.ep{background:#ff2bd6} .bars i.pt{background:var(--caramel)}
 .bars i.z{background:var(--apple);height:3px!important;opacity:1}
 .bars i.n{background:var(--line);height:3px!important}
 .mem .p{font:600 16px var(--display);text-align:right;align-self:start}
-.mem small.lt{color:var(--mute)} .mem small.lt b{color:var(--ink);display:inline;font-weight:700} .mem small.lt b.hiv{color:#8fe3f5} .mem small.lt b.epv{color:#b99bff} .mem small.lt b.up{color:var(--leaf)}
+.mem small.lt{color:var(--mute)} .mem small.lt b{color:var(--ink);display:inline;font-weight:700} .mem small.lt b.hiv{color:#8fe3f5} .mem small.lt b.epv{color:#ff5fe0} .mem small.lt b.up{color:var(--leaf)}
 .mem .p small{font:600 11px var(--text)}
 
 /* solo event: hidden until the apple is tapped 10 times */
@@ -351,8 +351,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 .strip{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:3px;align-items:end;height:60px;padding-top:14px}
 .strip div{border-radius:5px 5px 2px 2px;background:var(--leaf);position:relative;min-height:4px;transition:height .6s}
-.strip div.hi{background:#5cc8e0} .strip div.ep{background:linear-gradient(180deg,#ff6cf0,#ff1fd0 55%,#e600c4);box-shadow:0 0 6px #ff3ddc,0 0 16px rgba(255,31,208,.75),inset 0 1px 0 rgba(255,255,255,.55)}
-.strip div.ep span{color:#ff6cf0;font-weight:800;text-shadow:0 0 8px rgba(255,31,208,.7)} .strip div.half{background:var(--caramel)} .strip div.zero{background:var(--apple)} .strip div.na{background:var(--line)}
+.strip div.hi{background:#5cc8e0} .strip div.ep{background:#ff2bd6}
+.strip div.ep span{color:#ff5fe0;font-weight:800} .strip div.half{background:var(--caramel)} .strip div.zero{background:var(--apple)} .strip div.na{background:var(--line)}
 .strip div span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font:600 10px var(--text);color:var(--mute);margin-bottom:2px;letter-spacing:-.2px}
 @media (max-width:420px){.strip div span{font-size:9px}}
 .lands{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
@@ -513,7 +513,7 @@ footer{align-items:center}
         <div><b class="num" id="hLeft">–</b><small>Until the end</small></div>
         <div><b class="num" id="thisT">–</b><small id="thisTl">This Turkey so far</small></div>
       </div>
-      <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px"><span>Our last 15 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:linear-gradient(180deg,#ff6cf0,#ff1fd0);box-shadow:0 0 6px #ff3ddc"></i>3k+</span><span><i style="background:#5cc8e0"></i>2k+</span><span><i style="background:var(--leaf)"></i>2k</span><span><i style="background:var(--caramel)"></i>less</span><span><i style="background:var(--apple)"></i>0</span></span></div>
+      <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px"><span>Our last 15 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:#ff2bd6"></i>3k+</span><span><i style="background:#5cc8e0"></i>2k+</span><span><i style="background:var(--leaf)"></i>2k</span><span><i style="background:var(--caramel)"></i>less</span><span><i style="background:var(--apple)"></i>0</span></span></div>
       <div class="strip" id="strip" title="Team points on each Turkey"></div>
       <div class="lands" id="lands"></div>
     </section>
