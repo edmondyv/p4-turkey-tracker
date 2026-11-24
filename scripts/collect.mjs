@@ -377,9 +377,9 @@ export async function main() {
     const c100 = marks.find((x) => x.r === 100);
     const lastCompleted = s0 - CYCLE; // Turkey that landed 20 min before the current one
     const checkS = now - s0 >= 240 ? lastCompleted : lastCompleted - CYCLE; // 4 min grace (API cache + late points)
-    // the last 12 finished Turkeys (the one that is up now is shown separately as "This Turkey")
+    // the last 18 finished Turkeys (the one that is up now is shown separately as "This Turkey")
     const recAt = (c) => cycles.find((x) => x.s === c);
-    const done12 = Array.from({ length: 12 }, (_, i) => s0 - (12 - i) * CYCLE);
+    const done12 = Array.from({ length: 18 }, (_, i) => s0 - (18 - i) * CYCLE);
     const members = Object.keys(SQUAD).map(Number).map((uid) => {
       const c = p4.members.find((x) => x.uid === uid) || { uid, name: SQUAD[uid], points: 0, lastAt: null };
       const lastCycle = c.lastAt ? c.lastAt - (c.lastAt % CYCLE) : null;
