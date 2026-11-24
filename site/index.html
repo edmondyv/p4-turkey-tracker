@@ -406,6 +406,8 @@ tr.cut td{border-top:2px dashed var(--caramel)}
 .pill.g{color:var(--leaf)} .pill.r{color:#ff8d94}
 @media (max-width:680px){.hide-s{display:none}}
 td.late{color:var(--dim)}
+.tpill{display:inline-block;min-width:46px;padding:2px 7px;border-radius:7px;color:var(--ink);font-weight:700;text-align:center}
+.tpill.t-ep{background:rgba(255,43,214,.55)} .tpill.t-hi{background:rgba(92,200,224,.45)} .tpill.t-ok{background:rgba(124,203,78,.42)} .tpill.t-pt{background:rgba(246,169,59,.4)} .tpill.t-z{background:rgba(240,69,79,.5)}
 .tnote{font-size:11.5px;color:var(--dim);font-weight:600;margin-top:6px;line-height:1.4}
 .tnote:empty{display:none}
 
@@ -633,9 +635,15 @@ const varName = (v) => v === "shinyRainbow" ? "Shiny Rainbow" : v === "shinyGold
 // one player makes at most 1,000 per Turkey, so a team can't make more than 1,000 per member;
 // above that, points from the Turkey before arrived late and landed in this one
 const lateCap = (r) => 1000 * (r.m || 4);
+// Avg 3 as a pill in the team tier colours (same thresholds as our Turkey strip, scaled to team size)
+function tierPill(v, m) {
+  if (v == null) return "–";
+  const f = (m || 4) / 4, t = v <= 0 ? "z" : v >= 3400 * f ? "ep" : v >= 2400 * f ? "hi" : v >= 1950 * f ? "ok" : "pt";
+  return `<span class="tpill t-${t}">${k(v)}</span>`;
+}
 function lastCell(r) {
   const late = r.lc || (r.last != null && r.last > lateCap(r));
-  return `<td class="r num ${late ? "late" : r.last > 2050 ? "gold" : r.last === 0 ? "down" : ""}"${late ? ` title="Capped: the extra was late points from the Turkey before"` : ""}>${k(r.last)}${late ? "*" : ""}</td>`;
+  return `<td class="r num ${late ? "late" : r.last === 0 ? "down" : ""}"${late ? ` title="Capped: the extra was late points from the Turkey before"` : ""}>${k(r.last)}${late ? "*" : ""}</td>`;
 }
 function lateNote(id, rows) {
   const n = rows.filter((r) => r.lc || (r.last != null && r.last > lateCap(r))).length;
@@ -849,10 +857,10 @@ function renderPace(d) {
 function renderTables(d) {
   $("rivalsBody").innerHTML = d.rivals.map((r) => {
     const eta = r.me ? "" : r.eta == null ? '<span class="dim">–</span>' : r.gap > 0 ? `<span class="pill g" title="We pass them in ${r.eta} Turkeys">+1 in ${r.eta}</span>` : `<span class="pill r" title="They pass us in ${r.eta} Turkeys">−1 in ${r.eta}</span>`;
-    return `<tr class="${r.me ? "me" : ""}${r.r === 101 ? " cut" : ""}"><td class="num rk">${r.r}${arrow(r.dr)}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num hide-s">${k(r.p)}</td><td class="r num ${r.gap > 0 ? "down" : r.gap < 0 ? "up" : ""}">${r.me ? "" : sgn(r.gap)}</td>${lastCell(r)}<td class="r num">${k(r.h1)}</td><td class="r">${eta}</td></tr>`;
+    return `<tr class="${r.me ? "me" : ""}${r.r === 101 ? " cut" : ""}"><td class="num rk">${r.r}${arrow(r.dr)}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num hide-s">${k(r.p)}</td><td class="r num ${r.gap > 0 ? "down" : r.gap < 0 ? "up" : ""}">${r.me ? "" : sgn(r.gap)}</td>${lastCell(r)}<td class="r num">${tierPill(r.h1, r.m)}</td><td class="r">${eta}</td></tr>`;
   }).join("");
   lateNote("rivalsLate", d.rivals);
-  $("topBody").innerHTML = d.top20.map((r) => `<tr><td class="num rk">${r.r}${arrow(r.dr)}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td>${lastCell(r)}<td class="r num">${k(r.h1)}</td></tr>`).join("");
+  $("topBody").innerHTML = d.top20.map((r) => `<tr><td class="num rk">${r.r}${arrow(r.dr)}</td><td class="t">${leagueIcon(r.icon)}${esc(r.n)}</td><td class="r num">${k(r.p)}</td>${lastCell(r)}<td class="r num">${tierPill(r.h1, r.m)}</td></tr>`).join("");
   lateNote("topLate", d.top20);
 }
 
