@@ -212,20 +212,22 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* squad card v2: fixed rows so every player reads the same way */
 .mem2{padding:2px 0;container-type:inline-size}
 .mem2 .sm{display:none}
-@container (max-width:300px){.mem2 .lg{display:none}.mem2 .sm{display:inline}.mem2 div.stats{grid-template-columns:minmax(0,.8fr) minmax(0,.8fr) minmax(0,1.4fr)}}
+@container (max-width:300px){.mem2 .lg{display:none}.mem2 .sm{display:inline}.mem2 div.stats{gap:0 12px}}
 .mem2 .hd{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
 .mem2 .who{min-width:0}
 .mem2 .who b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mem2 .who small{display:block;font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mem2 .tot{text-align:right;font:600 17px var(--display);line-height:1.1}
 .mem2 .tot small{display:block;font:600 11px var(--text);color:var(--mute)}
-.mem2 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:9px;padding-top:8px;border-top:1px solid var(--line)}
-.mem2 .stats>div{min-width:0;padding:0 8px;border-left:1px solid var(--line)}
-.mem2 .stats>div:first-child{padding-left:0;border-left:0}
-.mem2 .stats b{display:block;font:600 16px var(--display);white-space:nowrap;line-height:1.2}
+.mem2 .stats{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:0 20px;align-items:end;margin-top:9px;padding-top:8px;border-top:1px solid var(--line)}
+.mem2 .stats>div{min-width:0}
 .mem2 .stats span i{font-style:normal}
 .mem2 .stats span{display:block;font-size:11px;font-weight:600;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mem2 .stats b.up{color:var(--leaf)} .mem2 .stats b.bad{color:var(--apple)} .mem2 .stats b.dim{color:var(--dim)}
+.mem2 .nb{text-align:right;min-width:44px}
+.mem2 .nb b{display:block;font:600 16px var(--display);white-space:nowrap;line-height:1.2}
+.mem2 .nb b.up{color:var(--leaf)} .mem2 .nb b.bad{color:var(--apple)} .mem2 .nb b.dim{color:var(--dim)}
+.mem2 .offb b{display:block;font:700 12.5px var(--text);color:#e98d97;white-space:nowrap;line-height:1.35}
+.mem2 .offb b.dim{color:var(--dim)}
 .mem2 .bars{display:flex;gap:3px;align-items:flex-end;height:26px;margin-top:10px}
 .mem2 .bars i{flex:1;width:auto;border-radius:3px 3px 1px 1px}
 
@@ -843,10 +845,10 @@ function renderSquad(d) {
       const st = s == null ? "No points yet" : s === 0 ? `<span class="up">Scored</span> ${m.lastAt ? hm(m.lastAt) : "?"}` : `<span class="bad-t">Missed ${s}</span>, last ${m.lastAt ? hm(m.lastAt) : "?"}`;
       const nowCell = liveV ? `<b class="up">+${full(liveV)}</b>` : `<b class="dim">–</b>`;
       const lastCell2 = lastV == null ? `<b class="dim">–</b>` : lastV <= 0 ? `<b class="bad">0</b>` : `<b>${full(lastV)}</b>`;
-      const offCell = m.off == null ? `<b class="dim">–</b><span>offline</span>` : m.off ? `<b class="bad">${offTxt}</b><span>${m.off} missed</span>` : `<b class="dim">0 h</b><span>none missed</span>`;
+      const offCell = m.off == null ? "" : m.off ? `<b>${offTxt} offline</b><span><i class="lg">${m.off} Turkey${m.off === 1 ? "" : "s"} missed</i><i class="sm">${m.off} missed</i></span>` : `<b class="dim">Never offline</b><span>0 missed</span>`;
       const bars2 = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i class="${v >= 900 ? "au" : v >= 800 ? "ep" : v >= 600 ? "hi" : v >= 400 ? "" : "pt"}" style="height:${Math.max(12, 100 * Math.min(v, 1000) / 1000)}%" title="${full(v)}"></i>`).join("");
       return `<div class="mem2"><div class="hd">${dot}<div class="who"><b>${esc(m.name)}</b><small>${st}</small></div><div class="tot num">${k(m.points)}<small>total</small></div></div>` +
-        `<div class="stats"><div>${nowCell}<span><i class="lg">this Turkey</i><i class="sm">now</i></span></div><div>${lastCell2}<span><i class="lg">last Turkey</i><i class="sm">last</i></span></div><div title="${offTip}">${offCell}</div></div>` +
+        `<div class="stats"><div class="offb" title="${offTip}">${offCell}</div><div class="nb">${lastCell2}<span><i class="lg">last Turkey</i><i class="sm">last</i></span></div><div class="nb">${nowCell}<span><i class="lg">this Turkey</i><i class="sm">now</i></span></div></div>` +
         `<div class="bars" title="Points on each of the last 12 Turkeys, oldest on the left">${bars2}</div></div>`;
     }).join("");
     return `<div class="pair">${rows}</div>`;
