@@ -207,6 +207,9 @@ function makePace(cycles, capOf) {
     return null;
   }
   pace.capped = (key) => (series(key), capped.has(key)); // last Turkey had late points moved back
+  // average over the k Turkeys before the latest one: the latest can still be missing points that the
+  // API shows late, so this is the fairest like-for-like comparison between teams
+  pace.settled = (key, k) => { const s = series(key); return s.length >= k + 1 ? s.slice(1, k + 1).reduce((a, b) => a + b, 0) / k : null; };
   return pace;
 }
 
@@ -388,6 +391,11 @@ export async function main() {
     const exactTeam = (c) => (c >= mtFrom ? uids.reduce((a, u) => a + exact(u, c), 0) : undefined);
     const teamTurkeys = done12.map((c) => ({ s: c, pts: exactTeam(c) ?? diff(recAt(c + CYCLE)?.p?.[LEAGUE], recAt(c)?.p?.[LEAGUE]) }));
     if (exactTeam(s0 - CYCLE) != null) me.last = exactTeam(s0 - CYCLE);
+    // Our own averages from the exact per-player record (late credits put back in the right Turkey),
+    // so one late kill can't make a Turkey look like 3.1k and the next like 2k.
+    const exactAvg = (k) => { const v = []; for (let i = 1; i <= k; i++) { const x = exactTeam(s0 - i * CYCLE); if (x == null) return null; v.push(x); } return v.reduce((a, b) => a + b, 0) / k; };
+    for (const [key, k] of [["h1", 3], ["h3", 9], ["h6", 18]]) { const a = exactAvg(k); if (a != null) me[key] = round(a); }
+    { const v = [2, 3, 4].map((i) => exactTeam(s0 - i * CYCLE)); me.hs = v.every((x) => x != null) ? round(v.reduce((a, b) => a + b, 0) / 3) : round(pace.settled(LEAGUE, 3)); }
     // the 20 teams just ahead: median pace (robust to solo-killing outliers), how many we outpace,
     // and our projected rank if every top-300 team keeps its own 6-hour pace
     const myR0 = p4.place || 999;
@@ -421,7 +429,7 @@ export async function main() {
     // steadily (linearly) to 3k or 3.4k per Turkey by the end (a team already faster keeps its pace).
     // We stay at our last-6 h pace. The 100th best other finish is the line we must beat.
     const L = turkeysLeft, v6 = (n) => pace(n, 18) ?? pace(n, 72);
-    const myV = v6(LEAGUE) ?? 0, others = rows.filter((r) => r.n !== LEAGUE);
+    const myV = me.h6 ?? v6(LEAGUE) ?? 0, others = rows.filter((r) => r.n !== LEAGUE);
     const outlook = L && others.length >= 100 ? [null, 3000, 3400].map((T) => {
       const fin = others.map((r) => { const v = v6(r.n); if (v == null) return r.p; return r.p + L * (T == null ? v : (v + Math.max(v, T)) / 2); }).sort((a, b) => b - a);
       const line = fin[99], myFin = p4.points + L * myV;
@@ -450,9 +458,10 @@ export async function main() {
     });
     // race track: from the top-100 line down to a little below P4
     const lo = Math.max(myR + 8, 108), hi = Math.min(92, myR - 4);
-    track = rows.filter((r) => r.r >= hi && r.r <= lo).map((r) => ({ r: r.r, n: r.n, p: r.p, m: r.m, icon: r.icon,
-      last: round(pace(r.n, 1)), lc: pace.capped(r.n) || undefined, h1: round(pace(r.n, 3)), h3: round(pace(r.n, 9)), me: r.n === LEAGUE }));
-    if (!track.some((t) => t.me)) track.push({ r: p4.place, n: LEAGUE, p: p4.points, h1: round(pace(LEAGUE, 3)), me: true });
+    track = rows.filter((r) => r.r >= hi && r.r <= lo).map((r) => (r.n === LEAGUE
+      ? { r: r.r, n: r.n, p: r.p, m: r.m, icon: r.icon, last: me.last, h1: me.h1, hs: me.hs, h3: me.h3, me: true }
+      : { r: r.r, n: r.n, p: r.p, m: r.m, icon: r.icon, last: round(pace(r.n, 1)), lc: pace.capped(r.n) || undefined, h1: round(pace(r.n, 3)), hs: round(pace.settled(r.n, 3)), h3: round(pace(r.n, 9)), me: false }));
+    if (!track.some((t) => t.me)) track.push({ r: p4.place, n: LEAGUE, p: p4.points, last: me.last, h1: me.h1, hs: me.hs, h3: me.h3, me: true });
 
     // ---------- alerts (one grouped message per run)
     const downNow = new Set(members.filter((x) => (x.streak ?? 0) > 0).map((x) => x.uid));

@@ -692,14 +692,14 @@ function renderHero(d) {
   const x = (v) => ((v - lo + pad) / (hi - lo + 2 * pad)) * 100;
   let html = '<div class="lane"></div>';
   // relative pace against ours over the last hour (points per Turkey), and whether they cross us before the end
-  const myH1 = (d.track.find((t) => t.me) || {}).h1 ?? p.h1, left = d.season.turkeysLeft || 0;
-  const rel = (t) => (myH1 != null && t.h1 != null ? t.h1 - myH1 : null);
+  // compare every team on the same window: the hour before the latest Turkey (whose points can still arrive late)
+  const sv = (t) => t.hs ?? t.h1, myH1 = sv(d.track.find((t) => t.me) || {}) ?? p.h1, left = d.season.turkeysLeft || 0;
+  const rel = (t) => (myH1 != null && sv(t) != null ? sv(t) - myH1 : null);
   const band = (dv) => (dv == null ? "" : dv > 300 ? "v2" : dv > 150 ? "v1" : dv >= -150 ? "v0" : dv >= -300 ? "vm1" : "vm2");
   const crosses = (t) => { const dv = rel(t), gap = t.p - p.p; return dv != null && ((gap < 0 && dv > 50) || (gap > 0 && dv < -50)) && Math.abs(gap) / Math.abs(dv) <= left; };
   d.track.filter((t) => !t.me).forEach((t, i) => {
     const dv = rel(t), b = band(dv), near = crosses(t), tl = dv == null || dv <= 150 ? 0 : Math.round(Math.min(34, 5 + (dv / 800) * 29)); // trails only on teams gaining on us
     const eta = near ? Math.ceil(Math.abs(t.p - p.p) / Math.abs(dv)) : null;
-    const tip = `#${t.r} ${esc(t.n)}, ${full(t.p)}${t.h1 != null ? `, ${full(t.h1)} per Turkey over the last hour (${dv >= 0 ? "+" : ""}${full(dv)} vs us)` : ""}${eta ? (t.p < p.p ? `, passes us in about ${eta} Turkeys` : `, we pass them in about ${eta} Turkeys`) : ""}`;
     html += `<div class="dot ${b}${near ? " near" : b === "vm2" ? " far" : ""}" data-n="${esc(t.n)}" style="left:${x(t.p)}%;top:${59 + [0, -18, 18, -9, 9][i % 5]}px;--tl:${tl}px;--d:${Math.round(x(t.p) * 4)}ms"></div>`;
   });
   $("trkKey").hidden = myH1 == null;
@@ -722,7 +722,7 @@ let trkSel = null, trkPinned = false;
 const trkPace = (dv) => (dv == null ? "" : dv > 300 ? "#ff8a3d" : dv > 150 ? "#ffe45c" : dv >= -150 ? "#c9a6ec" : "#a59bb0");
 function trkCard(t) {
   const d = D, me = d.track.find((x) => x.me) || {}, p = d.p4, left = d.season.turkeysLeft || 0;
-  const myH1 = me.h1 ?? p.h1, dv = t.me || myH1 == null || t.h1 == null ? null : t.h1 - myH1, gap = t.p - p.p;
+  const sv = (x) => x.hs ?? x.h1, myH1 = sv(me) ?? p.h1, dv = t.me || myH1 == null || sv(t) == null ? null : sv(t) - myH1, gap = t.p - p.p;
   const tt = (n) => { const m = n * 20; return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? " " + String(m % 60).padStart(2, "0") : ""}`; };
   let verdict = "", vc = "var(--mute)";
   if (t.me) {
@@ -735,8 +735,8 @@ function trkCard(t) {
   }
   return `<div class="tp-h">${leagueIcon(t.icon)}<div>${esc(t.n)} <span>#${t.r}</span></div></div>
     <div class="tp-sub"><b class="num">${full(t.p)}</b> points${t.me ? "" : `, ${gap >= 0 ? `<b class="num">${k(gap)}</b> ahead of us` : `<b class="num">${k(-gap)}</b> behind us`}`}</div>
-    <div class="tp-g"><div><small>Avg 3</small><b class="num">${k(t.h1)}</b>${dv != null ? `<em style="color:${trkPace(dv)}">${dv >= 0 ? "+" : "−"}${k(Math.abs(dv))}</em>` : ""}</div>
-      <div><small>Last</small><b class="num">${k(t.last)}${t.lc ? "*" : ""}</b></div><div><small>Avg 3 h</small><b class="num">${k(t.h3)}</b></div></div>
+    <div class="tp-g"><div title="Average of the 3 Turkeys before the latest one"><small>1 h, settled</small><b class="num">${k(t.hs ?? t.h1)}</b>${dv != null ? `<em style="color:${trkPace(dv)}">${dv >= 0 ? "+" : "−"}${k(Math.abs(dv))}</em>` : ""}</div>
+      <div><small>Last 3 h</small><b class="num">${k(t.h3)}</b></div><div><small>Last</small><b class="num">${k(t.last)}${t.lc ? "*" : ""}</b></div></div>
     ${verdict ? `<div class="tp-v" style="color:${vc}">${verdict}</div>` : ""}`;
 }
 function trkShow(name, pin) {
