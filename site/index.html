@@ -516,7 +516,7 @@ footer{align-items:center}
         <div><b class="num" id="hLeft">–</b><small>Until the end</small></div>
         <div><b class="num" id="thisT">–</b><small id="thisTl">This Turkey so far</small></div>
       </div>
-      <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px"><span>Our last 15 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:var(--t-ep)"></i>3k+</span><span><i style="background:var(--t-hi)"></i>2k+</span><span><i style="background:var(--t-ok)"></i>2k</span><span><i style="background:var(--t-pt)"></i>less</span><span><i style="background:var(--apple)"></i>0</span></span></div>
+      <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px"><span>Our last 15 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:var(--t-ep)"></i>3.4k+</span><span><i style="background:var(--t-hi)"></i>2.4k+</span><span><i style="background:var(--t-ok)"></i>1.6k+</span><span><i style="background:var(--t-pt)"></i>less</span><span><i style="background:var(--apple)"></i>0</span></span></div>
       <div class="strip" id="strip" title="Team points on each Turkey"></div>
       <div class="lands" id="lands"></div>
     </section>
@@ -795,7 +795,7 @@ function renderSquad(d) {
       prevStreak[u] = s;
       const presTxt = pr ? (pr.type === 2 ? "in game" : pr.type === 1 ? "online" : "status hidden") : "";
       const tk = (m.turkeys || []).slice(-12), mx = Math.max(700, ...tk.filter((v) => v != null));
-      const bars = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i class="${v > 850 ? "ep" : v >= 600 ? "hi" : v >= 450 ? "" : "pt"}" style="height:${Math.max(4, 18 * v / mx)}px" title="${full(v)}"></i>`).join("");
+      const bars = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i class="${v >= 850 ? "ep" : v >= 600 ? "hi" : v >= 400 ? "" : "pt"}" style="height:${Math.max(4, 18 * v / mx)}px" title="${full(v)}"></i>`).join("");
       const lastV = tk.length ? tk[tk.length - 1] : null, liveV = d.p4.thisTurkey && d.p4.thisTurkey.per ? d.p4.thisTurkey.per[u] : null;
       const av = P && P.avatars && P.avatars[u];
       const dot = av ? `<span class="ava"><img src="${av}" alt="" loading="lazy"><span class="st ${status[0]}"></span></span>` : `<span class="st ${status[0]}" title="${presTxt}"></span>`;
@@ -842,7 +842,7 @@ function renderPace(d) {
   $("thisTl").textContent = tt.s ? `${hm(tt.s)} Turkey, ${nIn}/4 scored` : "This Turkey so far";
   const tk = (p.turkeys || []).slice(-15), full2 = 2000;
   const smax = Math.max(2500, ...tk.map((t) => t.pts || 0));
-  $("strip").innerHTML = tk.map((t) => { const v = t.pts; const cls = v == null ? "na" : v <= 0 ? "zero" : v >= 3000 ? "ep" : v > 2050 ? "hi" : v >= 1950 ? "" : "half";
+  $("strip").innerHTML = tk.map((t) => { const v = t.pts; const cls = v == null ? "na" : v <= 0 ? "zero" : v >= 3400 ? "ep" : v >= 2400 ? "hi" : v >= 1600 ? "" : "half"; // = player tiers x4
     return `<div class="${cls}" style="height:${v == null ? 4 : Math.max(4, v / smax * 44)}px" title="${hm(t.s)} Turkey: ${v == null ? "no data" : full(v)}">${v != null ? `<span>${(v / 1000).toFixed(1)}</span>` : ""}</div>`; }).join("");
 }
 
