@@ -351,8 +351,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 .strip{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:3px;align-items:end;height:60px;padding-top:14px}
 .strip div{border-radius:5px 5px 2px 2px;background:var(--leaf);position:relative;min-height:4px;transition:height .6s}
-.strip div.hi{background:#5cc8e0} .strip div.ep{background:linear-gradient(180deg,#ff7ae6,#d23cff);box-shadow:0 0 10px rgba(255,84,220,.6),inset 0 1px 0 rgba(255,255,255,.35)}
-.strip div.ep span{color:#ff9cec} .strip div.half{background:var(--caramel)} .strip div.zero{background:var(--apple)} .strip div.na{background:var(--line)}
+.strip div.hi{background:#5cc8e0} .strip div.ep{background:linear-gradient(180deg,#ff6cf0,#ff1fd0 55%,#e600c4);box-shadow:0 0 6px #ff3ddc,0 0 16px rgba(255,31,208,.75),inset 0 1px 0 rgba(255,255,255,.55)}
+.strip div.ep span{color:#ff6cf0;font-weight:800;text-shadow:0 0 8px rgba(255,31,208,.7)} .strip div.half{background:var(--caramel)} .strip div.zero{background:var(--apple)} .strip div.na{background:var(--line)}
 .strip div span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font:600 10px var(--text);color:var(--mute);margin-bottom:2px;letter-spacing:-.2px}
 @media (max-width:420px){.strip div span{font-size:9px}}
 .lands{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
@@ -513,7 +513,7 @@ footer{align-items:center}
         <div><b class="num" id="hLeft">–</b><small>Until the end</small></div>
         <div><b class="num" id="thisT">–</b><small id="thisTl">This Turkey so far</small></div>
       </div>
-      <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px"><span>Our last 15 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:linear-gradient(180deg,#ff7ae6,#d23cff);box-shadow:0 0 6px rgba(255,84,220,.6)"></i>3k+</span><span><i style="background:#5cc8e0"></i>2k+</span><span><i style="background:var(--leaf)"></i>2k</span><span><i style="background:var(--caramel)"></i>less</span><span><i style="background:var(--apple)"></i>0</span></span></div>
+      <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px"><span>Our last 15 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:linear-gradient(180deg,#ff6cf0,#ff1fd0);box-shadow:0 0 6px #ff3ddc"></i>3k+</span><span><i style="background:#5cc8e0"></i>2k+</span><span><i style="background:var(--leaf)"></i>2k</span><span><i style="background:var(--caramel)"></i>less</span><span><i style="background:var(--apple)"></i>0</span></span></div>
       <div class="strip" id="strip" title="Team points on each Turkey"></div>
       <div class="lands" id="lands"></div>
     </section>
@@ -791,7 +791,7 @@ function renderSquad(d) {
       if (prevStreak[u] === 0 && s > 0) notify(`${m.name} missed the last Turkey`);
       prevStreak[u] = s;
       const presTxt = pr ? (pr.type === 2 ? "in game" : pr.type === 1 ? "online" : "status hidden") : "";
-      const tk = (m.turkeys || []).slice(-15), mx = Math.max(700, ...tk.filter((v) => v != null));
+      const tk = (m.turkeys || []).slice(-12), mx = Math.max(700, ...tk.filter((v) => v != null));
       const bars = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i class="${v > 850 ? "ep" : v >= 600 ? "hi" : v >= 450 ? "" : "pt"}" style="height:${Math.max(4, 18 * v / mx)}px" title="${full(v)}"></i>`).join("");
       const lastV = tk.length ? tk[tk.length - 1] : null, liveV = d.p4.thisTurkey && d.p4.thisTurkey.per ? d.p4.thisTurkey.per[u] : null;
       const av = P && P.avatars && P.avatars[u];
