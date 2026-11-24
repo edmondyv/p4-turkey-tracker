@@ -364,7 +364,24 @@ button{font:inherit;color:inherit;cursor:pointer}
 .alt-out small b{display:inline;font:inherit;color:var(--ink);font-weight:800}
 .alt-out>div>b{display:block;font:600 22px/1.15 var(--display);margin:1px 0}
 .alt-out b.w{font-size:15px;line-height:1.5}
-.alt-afk{display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(92,200,224,.13);border-radius:12px;padding:8px 10px}
+.alt-afk{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;background:rgba(255,241,224,.06);border-radius:12px;padding:9px 11px}
+.alt-afk .tl b{display:block;font:600 32px/1 var(--display)}
+.alt-afk .tl.ok b{color:var(--leaf)} .alt-afk .tl.warn b{color:#ffd166} .alt-afk .tl.bad b{color:var(--apple)} .alt-afk .tl.over b{color:#8fe3f5}
+.alt-afk .zc{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:800;margin-bottom:3px}
+.zc.ok{background:var(--leaf);color:#1e1024} .zc.warn{background:#ffd166;color:#1e1024} .zc.bad{background:var(--apple);color:#fff} .zc.over{background:var(--t-hi);color:#1e1024}
+.alt-aim{font-size:12.5px;font-weight:600;color:var(--mute);margin-top:8px;line-height:1.45}
+.alt-aim b{color:var(--ink)}
+.alt-pets{margin-top:10px;background:rgba(255,241,224,.04);border-radius:12px;padding:8px 10px}
+.alt-pets summary{cursor:pointer;font-size:12px;font-weight:800;color:var(--ink);list-style-position:inside}
+.alt-pets .alt-in{margin-top:8px}
+.alt-in.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.alt-pt{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,.9fr);margin-top:8px;font-size:12.5px;font-weight:700}
+.alt-pt>span{padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alt-pt>span.h{font-size:11px;color:var(--dim);padding-top:0}
+.alt-pt>span.in{background:#2c4f2e} .alt-pt>span.in.l{color:var(--leaf)}
+.alt-pt>span.cur{box-shadow:inset 0 2px 0 var(--line),inset 0 -2px 0 var(--line)}
+.alt-pt>span.r{text-align:right}
+.alt-pmsg{font-size:11.5px;color:var(--dim);font-weight:600;margin-top:6px;line-height:1.4}
 .alt-afk small{display:block;font-size:11.5px;color:var(--mute);font-weight:600;line-height:1.35}
 .alt-afk .v{text-align:right;flex:none}
 .alt-afk .v b{display:block;font:600 22px/1.1 var(--display);color:#8fe3f5}
@@ -528,14 +545,23 @@ footer{align-items:center}
         <div class="alt-h"><h3>Alt timer</h3><span class="mute">Turkey: 7B HP, alive 15:00. Both hit from the start.</span></div>
         <div class="alt-in">
           <label>Main DPS<span class="f"><input id="acM" inputmode="decimal" autocomplete="off" value="6.35"><i>M</i></span></label>
-          <label>Alt DPS<span class="f"><input id="acA" inputmode="decimal" autocomplete="off" value="2.43"><i>M</i></span></label>
+          <label>Alt DPS<span class="f"><input id="acA" inputmode="decimal" autocomplete="off" value="1.35"><i>M</i></span></label>
         </div>
         <div class="alt-tip">Read both DPS after 1 to 2 minutes of hitting. The game shows an average since the fight started, so the first seconds are off, and lower if you started late.</div>
         <div id="acRes" aria-live="polite">
-          <div class="alt-lbl">Alt leaves when the Turkey timer shows</div>
-          <div class="alt-out" id="acOut"></div>
-          <div class="alt-lbl">AFK: the alt stays the whole fight</div>
+          <div class="alt-lbl">The alt stays the whole fight</div>
           <div class="alt-afk" id="acAfk"></div>
+          <div class="alt-aim" id="acAim"></div>
+          <details class="alt-pets" open><summary>Pet swap helper</summary>
+            <div class="alt-in three">
+              <label>Strong pet<span class="f"><input id="apS" inputmode="decimal" autocomplete="off" value="75.8"><i>k</i></span></label>
+              <label>Weak pet<span class="f"><input id="apW" inputmode="decimal" autocomplete="off" value="43.7"><i>k</i></span></label>
+              <label>Strong now<span class="f"><input id="apN" inputmode="numeric" autocomplete="off" value="10"><i>/15</i></span></label>
+            </div>
+            <div id="acPets"></div>
+          </details>
+          <div class="alt-lbl">Or the alt leaves early, when the Turkey timer shows</div>
+          <div class="alt-out" id="acOut"></div>
         </div>
         <div class="alt-note" id="acNote"></div>
       </div>
@@ -1127,7 +1153,7 @@ function setSolo(on, fromTap) {
 // ---------- alt timer: when should the alt leave so the main keeps the biggest share?
 // Points are split by damage, so every second the alt hits costs the main. Both hit from the
 // start; the alt stays just long enough for the Turkey to die with the chosen time to spare.
-const AC = ["acM", "acA"], TURKEY_HP = 7e9, TURKEY_LIFE = 900;
+const AC = ["acM", "acA"], AP = ["apS", "apW", "apN"], TURKEY_HP = 7e9, TURKEY_LIFE = 900;
 const numIn = (v, big, unit) => { const x = parseFloat(String(v).replace(",", ".").replace(/[^0-9.]/g, "")); return isFinite(x) && x > 0 ? (x >= big ? x : x * unit) : null; };
 const mmss = (t) => { t = Math.max(0, Math.round(t)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
 function altCalc() {
@@ -1140,11 +1166,35 @@ function altCalc() {
   if (!M || !A) { res.hidden = true; $("acNote").textContent = "Fill in both DPS values."; return; }
   res.hidden = false;
   const solo = H / M, both = H / (M + A), pts = (x) => Math.round(1000 * x).toLocaleString("en-US");
-  // AFK: alt hits the whole fight, so the main keeps only its share of the damage
-  const afkPts = both <= S ? Math.round(1000 * M / (M + A)) : 0;
-  $("acAfk").innerHTML = both <= S
-    ? `<div><small>Turkey dies with <b style="color:var(--ink)">${mmss(S - both)}</b> left</small><small>About ${(afkPts * 3).toLocaleString("en-US")} points an hour for the main</small></div><div class="v"><b class="num">${afkPts.toLocaleString("en-US")}</b><small>per Turkey</small></div>`
-    : `<div><small>Even together it takes ${mmss(both)}, longer than 15:00</small></div><div class="v"><b class="num">0</b><small>per Turkey</small></div>`;
+  // AFK: alt hits the whole fight, so the main keeps only its share of the damage. The main's DPS is
+  // fixed; the alt's is tuned with its pets so the Turkey dies with 0:30 to 1:00 to spare.
+  const afkPts = both <= S ? Math.round(1000 * M / (M + A)) : 0, left = S - both;
+  const zone = both > S || left < 20 ? "bad" : left < 30 ? "warn" : left <= 60 ? "ok" : "over";
+  const zoneTxt = { bad: both > S ? "Won't die in time" : "Too tight", warn: "A bit tight", ok: "In the target window", over: "More than needed" }[zone];
+  $("acAfk").innerHTML = `<div class="tl ${zone}"><b class="num">${both > S ? "–" : mmss(left)}</b></div><div><span class="zc ${zone}">${zoneTxt}</span><small>${both > S ? `Together it takes ${mmss(both)}` : "left when it dies"}<br>Aim for 0:30 to 1:00</small></div><div class="v"><b class="num">${afkPts.toLocaleString("en-US")}</b><small>main per Turkey</small></div>`;
+  const aFor = (sp) => H / (S - sp) - M, a30 = aFor(30), a60 = aFor(60), kd = (x) => `${Math.round(Math.abs(x) / 1e3)}k`;
+  $("acAim").innerHTML = a30 <= 0 ? "" : `Alt DPS for 0:30 to 1:00 left: <b>${fm(a30)}M to ${fm(a60)}M</b>, the main then gets ${pts(M / (M + a30))} to ${pts(M / (M + a60))}. ` +
+    (A < a30 ? `You're at ${fm(A)}M: add <b>${kd(a30 - A)} to ${kd(a60 - A)}</b>.` : A > a60 ? `You're at ${fm(A)}M, ${kd(A - a60)} above: weaker pets give the main more points.` : `You're at ${fm(A)}M, in the window.`);
+  // Pets: assume the alt's DPS is proportional to its 15 pets' damage, calibrated on the team it has now
+  const ps = numIn($("apS").value, 1e4, 1e3), pw = numIn($("apW").value, 1e4, 1e3), pn = Math.round(Number($("apN").value));
+  try { localStorage.setItem("p4.altpets", JSON.stringify(AP.map((id) => $(id).value))); } catch (e) {}
+  if (!ps || !pw || !(pn >= 0 && pn <= 15)) $("acPets").innerHTML = '<div class="alt-pmsg">Fill in both pet damages and how many strong pets the alt has now (0 to 15).</div>';
+  else {
+    const sum0 = pn * ps + (15 - pn) * pw, kf = A / sum0;
+    const opts = Array.from({ length: 16 }, (_, n) => { const a = kf * (n * ps + (15 - n) * pw), b = H / (M + a); return { n, a, left: S - b, ok: b <= S, main: M / (M + a) }; });
+    const inW = (o) => o.ok && o.left >= 30 && o.left <= 60;
+    let show = opts.filter((o) => o.n === pn || (o.ok && o.left >= 15 && o.left <= 75));
+    if (!opts.some(inW)) show = opts.filter((o) => o.n === pn || o.n === 0 || o.n === 15);
+    const cell = (o, v, cls = "") => `<span class="${[inW(o) ? "in" : "", o.n === pn ? "cur" : "", cls].filter(Boolean).join(" ")}">${v}</span>`;
+    const rowsHtml = show.map((o) => cell(o, `${o.n} + ${15 - o.n}${o.n === pn ? " (now)" : ""}`) + cell(o, `${fm(o.a)}M`, "r") + cell(o, o.ok ? mmss(o.left) : "–", "r l") + cell(o, pts(o.main), "r")).join("");
+    const best = opts.filter(inW);
+    const msg = best.length ? `Strong + weak pets out of 15. Green rows land in the 0:30 to 1:00 window.`
+      : opts[15].ok && opts[15].left < 30 ? `Even 15 strong pets only leave ${mmss(opts[15].left)}: the alt needs stronger pets.`
+      : !opts[15].ok ? `Even 15 strong pets don't kill it in time: the alt needs stronger pets.`
+      : `Even 15 weak pets leave more than 1:00: weaker pets would give the main more points.`;
+    $("acPets").innerHTML = `<div class="alt-pt"><span class="h">Strong + weak</span><span class="h r">Alt DPS</span><span class="h r">Left</span><span class="h r">Main</span>${rowsHtml}</div>` +
+      `<div class="alt-pmsg">${msg} Assumes the alt's DPS follows its pets' total damage: ${(sum0 / 1e3).toFixed(1)}k now for ${fm(A)}M, about ×${kf.toFixed(2)}. Check after a swap and adjust.</div>`;
+  }
   if (solo <= S - 60) {
     $("acOut").innerHTML = `<div style="grid-column:1/-1"><b class="w">No alt needed</b><small>The main alone kills it with ${mmss(S - solo)} left and keeps the full 1,000.</small></div>`;
     $("acNote").textContent = `Uses ${fm(M)}M, a notch under what you typed. Main alone needs ${mmss(solo)}.`;
@@ -1160,7 +1210,8 @@ function altCalc() {
   $("acNote").textContent = `Uses ${fm(M)}M and ${fm(A)}M, a notch under what you typed, to be safe. Main alone would need ${mmss(solo)}${solo > S ? ", too long for 15:00" : ""}. Points assume 1,000 per kill, split by damage.`;
 }
 try { const sv = JSON.parse(localStorage.getItem("p4.altcalc2") || "null"); if (Array.isArray(sv)) AC.forEach((id, i) => { if (sv[i]) $(id).value = sv[i]; }); } catch (e) {}
-AC.forEach((id) => { $(id).addEventListener("input", altCalc); });
+try { const sp = JSON.parse(localStorage.getItem("p4.altpets") || "null"); if (Array.isArray(sp)) AP.forEach((id, i) => { if (sp[i]) $(id).value = sp[i]; }); } catch (e) {}
+[...AC, ...AP].forEach((id) => { $(id).addEventListener("input", altCalc); });
 altCalc();
 </script>
 </body>
