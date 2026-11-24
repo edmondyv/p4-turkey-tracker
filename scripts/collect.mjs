@@ -450,16 +450,36 @@ export async function main() {
       s: s0, pts: p4.points - openRec.p[LEAGUE], scored: scoredNow,
       per: Object.fromEntries(members.map((x) => [x.uid, openRec.m && openRec.m[x.uid] != null ? x.points - openRec.m[x.uid] : null])),
     } : { s: s0, pts: null, scored: scoredNow, per: null };
-    // Top 100 at the end, three hypotheses: every other team keeps its last-6 h pace, or speeds up
-    // steadily (linearly) to 3k or 3.4k per Turkey by the end (a team already faster keeps its pace).
-    // We stay at our last-6 h pace. The 100th best other finish is the line we must beat.
+    // Top 100 at the end, three hypotheses. Each other team starts from its last-6 h pace, then:
+    // - keeps it
+    // - speeds up to 3k per Turkey by Wed 25 Nov 23:00 CET, then holds it
+    // - worst case: 3.2k by Wed 09:00 CET, 3.6k by Wed 23:00 CET, then holds it
+    // Teams speed up early in the event, not in the last day, so the targets have fixed deadlines and the pace
+    // is flat afterwards. Between deadlines the pace rises in a straight line; a team already faster keeps its
+    // pace; a deadline already past means the team is at that pace from now. We stay at our last-6 h pace.
+    // The 100th best other finish is the line we must beat.
     const L = turkeysLeft, v6 = (n) => pace(n, 18) ?? pace(n, 72);
     const myV = me.h6 ?? v6(LEAGUE) ?? 0, others = rows.filter((r) => r.n !== LEAGUE);
-    const outlook = L && others.length >= 100 ? [null, 3000, 3400].map((T) => {
-      const fin = others.map((r) => { const v = v6(r.n); if (v == null) return r.p; return r.p + L * (T == null ? v : (v + Math.max(v, T)) / 2); }).sort((a, b) => b - a);
+    const W09 = Date.UTC(2026, 10, 25, 8, 0) / 1000, W23 = Date.UTC(2026, 10, 25, 22, 0) / 1000;
+    const SCEN = [{ T: null, steps: [] }, { T: 3000, steps: [[W23, 3000]] }, { T: 3600, steps: [[W09, 3200], [W23, 3600]] }];
+    const gain = (v, steps) => {
+      if (!steps.length) return L * v;
+      let a = v; const fut = [];
+      for (const [t, r] of steps) { if (t <= now) a = Math.max(a, r); else fut.push([t, Math.max(v, r)]); }
+      const knots = [[now, a], ...fut];
+      let sum = 0;
+      for (let i = 0; i < L; i++) {
+        const t = now + (i + 0.5) * CYCLE; let r = knots[knots.length - 1][1];
+        for (let j = 1; j < knots.length; j++) if (t < knots[j][0]) { const [t1, r1] = knots[j - 1], [t2, r2] = knots[j]; r = r1 + (r2 - r1) * (t - t1) / (t2 - t1); break; }
+        sum += r;
+      }
+      return sum;
+    };
+    const outlook = L && others.length >= 100 ? SCEN.map(({ T, steps }) => {
+      const fin = others.map((r) => { const v = v6(r.n); if (v == null) return r.p; return r.p + gain(v, steps); }).sort((a, b) => b - a);
       const line = fin[99], myFin = p4.points + L * myV;
       return {
-        T, line: round(line), need: round(Math.max(0, (line - p4.points) / L)),
+        T, steps, line: round(line), need: round(Math.max(0, (line - p4.points) / L)),
         rank: 1 + fin.filter((f) => f > myFin).length,
         stopRank: 1 + fin.filter((f) => f > p4.points).length, // teams we track: the top 300
         miss: myV > 0 ? Math.max(0, Math.min(L, Math.floor(L - (line - p4.points) / myV))) : null,

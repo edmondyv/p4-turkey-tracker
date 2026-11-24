@@ -844,11 +844,14 @@ function renderPace(d) {
   if (!o) $("fin3").innerHTML = '<div class="fstop">The finish projection needs a few hours of history.</div>';
   else {
     const hrs = (n) => (n >= 3 ? ` <span style="white-space:nowrap">(${Math.round(n / 3)} h)</span>` : "");
-    const lab = { null: "Teams keep their pace", 2400: "All teams reach 2.4k", 3000: "All teams reach 3k", 3200: "All teams reach 3.2k", 3400: "All teams reach 3.4k" };
+    const lab = { null: "Teams keep their pace", 2400: "All teams reach 2.4k", 3000: "All teams reach 3k", 3200: "All teams reach 3.2k", 3400: "All teams reach 3.4k", 3600: "All teams reach 3.6k" };
+    const when = (t) => `${new Date(t * 1000).toLocaleDateString("en-GB", { weekday: "short", timeZone: TZ })} ${hm(t)}`;
+    const how = o.filter((x) => x.steps && x.steps.length).map((x) => `${lab[x.T]}: ${x.steps.map(([t, r]) => `${k(r)} by ${when(t)}`).join(", then ")}`);
+    const howNote = how.length ? `<div class="fstop">Teams speed up from their current pace. ${how.join(". ")}. After that they hold the pace to the end.</div>` : "";
     const s0 = o[0], stopOut = s0.stopRank > 100;
     $("fin3").innerHTML = `<div class="fl">Our rank at the end if we keep our last-6-hour average (${k(p.v6)} per Turkey), and how many Turkeys we could all miss and still finish top 100</div><div class="ftiles">` +
       o.map((x) => `<div class="ft ${x.rank <= 100 ? "in" : "out"}" title="#100 would finish near ${full(x.line)} points"><small>${lab[x.T]}</small><b class="num">#${x.rank}</b><em>${x.rank <= 100 ? `can miss ${x.miss} Turkey${x.miss === 1 ? "" : "s"}${hrs(x.miss)}` : `to make it: <span style="white-space:nowrap">${k(x.need)}</span> per Turkey on average from now on`}</em></div>`).join("") +
-      `</div><div class="fstop">${stopOut ? `If we all stopped now, we'd drop out of the top 100 (about <b>#${s0.stopRank >= 240 ? s0.stopRank + "+" : s0.stopRank}</b>).` : `If we all stopped now, we'd still finish in the top 100 (about <b>#${s0.stopRank}</b>).`}</div>`;
+      `</div>${howNote}<div class="fstop">${stopOut ? `If we all stopped now, we'd drop out of the top 100 (about <b>#${s0.stopRank >= 240 ? s0.stopRank + "+" : s0.stopRank}</b>).` : `If we all stopped now, we'd still finish in the top 100 (about <b>#${s0.stopRank}</b>).`}</div>`;
   }
   const lt = d.ref && d.ref.lastTurkeyAt;
   const lbl = lt ? `${hm(lt)} Turkey` : "Last Turkey";
