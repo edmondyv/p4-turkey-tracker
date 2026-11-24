@@ -301,7 +301,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .quiet{margin-top:12px}
 .qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));column-gap:18px}
 .qgrid>.stale{grid-column:1/-1}
-.qs{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 8px;align-items:center;padding:7px 0;border-top:1px solid rgba(255,241,224,.07)}
+.qs{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding:8px 0;border-top:1px solid rgba(255,241,224,.07)}
+.qs .qb{display:flex;gap:6px;flex-wrap:wrap}
 .qs b{font:600 15px var(--display)} .qs small{display:block;font-size:11px;color:var(--dim);font-weight:700}
 .qs a,.qs button{border:2px solid var(--line);background:var(--deep);border-radius:999px;padding:4px 10px;font-weight:800;font-size:12px;color:var(--ink);text-decoration:none;white-space:nowrap}
 .qs a{border-color:var(--leaf);color:var(--leaf);background:rgba(124,203,78,.12)}
@@ -988,13 +989,13 @@ function renderQuiet(d) {
   if (!q || !q.top || !q.top.length) { $("qList").innerHTML = '<div class="empty">No scan yet. The list fills in within 5 minutes.</div>'; $("qNote").textContent = ""; return; }
   $("qList").innerHTML = (q.stale ? `<p class="so-notes stale" style="margin:0 0 6px;color:var(--caramel2)">Roblox didn't answer the last scan. This list is from ${hm(q.at)}.</p>` : "") +
     q.top.map((x) => { const dur = q.at - x.since; return `<div class="qs${dur >= 3 * 3600 ? " long" : ""}"><div><b class="num">${durTxt(dur)}</b><small>at ${x.p} player${x.p === 1 ? "" : "s"} since ${hm(x.since)}${x.ping ? `, their ping ${x.ping} ms` : ""}</small></div>
-      <button type="button" data-copy="${esc(x.id)}">Copy ID</button><a href="roblox://experiences/start?placeId=${q.placeId}&gameInstanceId=${encodeURIComponent(x.id)}">Join</a></div>`; }).join("");
-  $("qNote").textContent = `Longest first: how long each public server has stayed at 1 player or fewer, tracked since ${hm(q.tracking)} and checked every 5 minutes. A long time suggests Roblox rarely sends players there, but anyone can still join, and a stranger who hits your Turkey takes part of the 1,000. Join opens that server in Roblox; Copy ID gives its job ID for an account manager. Updated ${Math.max(0, Math.round((Date.now() / 1000 - q.at) / 60))} min ago.`;
+      <div class="qb"><a href="roblox://experiences/start?placeId=${q.placeId}&gameInstanceId=${encodeURIComponent(x.id)}">Join</a><button type="button" data-copy="https://www.roblox.com/games/start?placeId=${q.placeId}&gameInstanceId=${encodeURIComponent(x.id)}" data-label="Copy link">Copy link</button><button type="button" data-copy="${esc(x.id)}" data-label="Copy ID">Copy ID</button></div></div>`; }).join("");
+  $("qNote").textContent = `Longest first: how long each public server has stayed at 1 player or fewer, tracked since ${hm(q.tracking)} and checked every 5 minutes. A long time suggests Roblox rarely sends players there, but anyone can still join, and a stranger who hits your Turkey takes part of the 1,000. Once one of you joins, the server has 2 players and leaves this list, so copy its link first and share it with your alt or the team. If the stranger leaves, Roblox keeps the server alive as long as one of you stays in it. Copy ID gives its job ID for an account manager. Updated ${Math.max(0, Math.round((Date.now() / 1000 - q.at) / 60))} min ago.`;
 }
 $("quietCard").addEventListener("click", (e) => {
   const t = e.target.closest("button[data-copy]"); if (!t) return;
   const id = t.dataset.copy;
-  (navigator.clipboard ? navigator.clipboard.writeText(id) : Promise.reject()).then(() => { t.textContent = "Copied"; setTimeout(() => (t.textContent = "Copy ID"), 1500); }, () => prompt("Server job ID", id));
+  (navigator.clipboard ? navigator.clipboard.writeText(id) : Promise.reject()).then(() => { t.textContent = "Copied"; setTimeout(() => (t.textContent = t.dataset.label || "Copy"), 1500); }, () => prompt("Copy this", id));
 });
 function landFoot() { // landing minutes in the viewer's time zone (zones with a :30 or :45 offset differ)
   const s0 = Math.floor(Date.now() / 1000 / CYCLE) * CYCLE, m = new Date(s0 * 1000).getMinutes() % 20;
