@@ -418,11 +418,11 @@ export async function main() {
       per: Object.fromEntries(members.map((x) => [x.uid, openRec.m && openRec.m[x.uid] != null ? x.points - openRec.m[x.uid] : null])),
     } : { s: s0, pts: null, scored: scoredNow, per: null };
     // Top 100 at the end, three hypotheses: every other team keeps its last-6 h pace, or speeds up
-    // steadily (linearly) to 2.4k or 3.4k per Turkey by the end (a team already faster keeps its pace).
+    // steadily (linearly) to 3k or 3.4k per Turkey by the end (a team already faster keeps its pace).
     // We stay at our last-6 h pace. The 100th best other finish is the line we must beat.
     const L = turkeysLeft, v6 = (n) => pace(n, 18) ?? pace(n, 72);
     const myV = v6(LEAGUE) ?? 0, others = rows.filter((r) => r.n !== LEAGUE);
-    const outlook = L && others.length >= 100 ? [null, 2400, 3400].map((T) => {
+    const outlook = L && others.length >= 100 ? [null, 3000, 3400].map((T) => {
       const fin = others.map((r) => { const v = v6(r.n); if (v == null) return r.p; return r.p + L * (T == null ? v : (v + Math.max(v, T)) / 2); }).sort((a, b) => b - a);
       const line = fin[99], myFin = p4.points + L * myV;
       return {

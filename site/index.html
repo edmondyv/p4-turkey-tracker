@@ -815,7 +815,7 @@ function renderPace(d) {
   if (!o) $("fin3").innerHTML = '<div class="fstop">The finish projection needs a few hours of history.</div>';
   else {
     const hrs = (n) => (n >= 3 ? ` <span style="white-space:nowrap">(${Math.round(n / 3)} h)</span>` : "");
-    const lab = { null: "Teams keep their pace", 2400: "All teams reach 2.4k", 3200: "All teams reach 3.2k", 3400: "All teams reach 3.4k" };
+    const lab = { null: "Teams keep their pace", 2400: "All teams reach 2.4k", 3000: "All teams reach 3k", 3200: "All teams reach 3.2k", 3400: "All teams reach 3.4k" };
     const s0 = o[0], stopOut = s0.stopRank > 100;
     $("fin3").innerHTML = `<div class="fl">Our rank at the end if we keep ${k(p.v6)} on every Turkey, and how many Turkeys we could all miss and still finish top 100</div><div class="ftiles">` +
       o.map((x) => `<div class="ft ${x.rank <= 100 ? "in" : "out"}" title="#100 would finish near ${full(x.line)} points"><small>${lab[x.T]}</small><b class="num">#${x.rank}</b><em>${x.rank <= 100 ? `can miss ${x.miss} Turkey${x.miss === 1 ? "" : "s"}${hrs(x.miss)}` : `need <span style="white-space:nowrap">${k(x.need)}</span> per Turkey`}</em></div>`).join("") +
