@@ -387,22 +387,29 @@ export async function main() {
       const turkeys = done12.map((c) => exact(uid, c) ?? diff(recAt(c + CYCLE)?.m?.[uid], recAt(c)?.m?.[uid]));
       return { uid, name: SQUAD[uid], display: c.display || c.name, points: c.points, lastAt: c.lastAt, streak, h1: round(pace(`m:${uid}`, 3)), turkeys };
     });
-    // Time each player went without scoring, since per-player tracking started. Not counted: Turkeys
-    // nobody on the team scored (game-side), and a miss streak that sits entirely inside a teammate's
-    // longer streak (that teammate was the cause, e.g. a partner who couldn't kill alone).
+    // Time each player went without scoring, since per-player tracking started, plus what the team
+    // reported from before (OFF_BEFORE, in Turkeys). Not counted:
+    // - Turkeys nobody on the team scored, and the one right after while everyone reconnects (game-side)
+    // - a miss streak that sits inside a teammate's longer streak (that teammate was the cause)
+    // - a streak identical to a teammate's: put on whichever of the two misses more overall
     {
-      const ids = Object.keys(SQUAD), got = (u, c) => hist.mt.by[u]?.[c] > 0, runs = {};
+      const OFF_BEFORE = { 3083204118: 13, 6079067379: 21 }; // Panda 4 h 20, Lego 7 h, before tracking began
+      const ids = Object.keys(SQUAD), got = (u, c) => hist.mt.by[u]?.[c] > 0, allMiss = (c) => ids.every((v) => !got(v, c)), runs = {};
       for (const u of ids) {
         runs[u] = []; let cur = null;
         for (let c = mtFrom; c <= checkS; c += CYCLE) {
-          if (ids.every((v) => !got(v, c))) continue; // nobody scored this one
+          if (allMiss(c) || (allMiss(c - CYCLE) && !got(u, c))) continue;
           if (!got(u, c)) { if (!cur) cur = { a: c, b: c, n: 0 }; cur.b = c; cur.n++; }
           else if (cur) { runs[u].push(cur); cur = null; }
         }
         if (cur) runs[u].push(cur);
       }
-      const off = Object.fromEntries(ids.map((u) => [u, runs[u].filter((r) => !ids.some((v) => v !== u && runs[v].some((x) => x.a <= r.a && x.b >= r.b && x.n > r.n))).reduce((t, r) => t + r.n, 0)]));
-      members.forEach((m) => { m.off = off[m.uid] ?? 0; });
+      const tot = Object.fromEntries(ids.map((u) => [u, runs[u].reduce((t, r) => t + r.n, 0)]));
+      const excused = (u, r) => ids.some((v) => v !== u && runs[v].some((x) => x.a <= r.a && x.b >= r.b && (x.n > r.n || (x.a === r.a && x.b === r.b && tot[v] > tot[u]))));
+      members.forEach((m) => {
+        m.off = runs[m.uid].filter((r) => !excused(m.uid, r)).reduce((t, r) => t + r.n, 0) + (OFF_BEFORE[m.uid] || 0);
+        if (OFF_BEFORE[m.uid]) m.offBefore = OFF_BEFORE[m.uid];
+      });
     }
     const uids = p4.members.map((x) => x.uid);
     const exactTeam = (c) => (c >= mtFrom ? uids.reduce((a, u) => a + exact(u, c), 0) : undefined);
