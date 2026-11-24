@@ -389,23 +389,24 @@ export async function main() {
     });
     // Time each player went without scoring, since per-player tracking started, plus what the team
     // reported from before (OFF_BEFORE, in Turkeys). Not counted:
-    // - Turkeys nobody on the team scored, and the one right after while everyone reconnects (game-side)
+    // - Turkeys nobody on the team scored (game-side)
     // - a miss streak that sits inside a teammate's longer streak (that teammate was the cause)
-    // - a streak identical to a teammate's: put on whichever of the two misses more overall
+    // - misses the team says weren't that player's fault (NOT_THEIRS: player -> Turkeys)
+    // Two players with exactly the same streak both count: we can't tell who caused it.
     {
       const OFF_BEFORE = { 3083204118: 13, 6079067379: 21 }; // Panda 4 h 20, Lego 7 h, before tracking began
+      const NOT_THEIRS = { 3083204118: [Date.UTC(2026, 10, 23, 8, 0) / 1000] }; // Panda, 09:00 Mon: Ed was in a meeting (pair)
       const ids = Object.keys(SQUAD), got = (u, c) => hist.mt.by[u]?.[c] > 0, allMiss = (c) => ids.every((v) => !got(v, c)), runs = {};
       for (const u of ids) {
         runs[u] = []; let cur = null;
         for (let c = mtFrom; c <= checkS; c += CYCLE) {
-          if (allMiss(c) || (allMiss(c - CYCLE) && !got(u, c))) continue;
+          if (allMiss(c) || (NOT_THEIRS[u] || []).includes(c)) continue;
           if (!got(u, c)) { if (!cur) cur = { a: c, b: c, n: 0 }; cur.b = c; cur.n++; }
           else if (cur) { runs[u].push(cur); cur = null; }
         }
         if (cur) runs[u].push(cur);
       }
-      const tot = Object.fromEntries(ids.map((u) => [u, runs[u].reduce((t, r) => t + r.n, 0)]));
-      const excused = (u, r) => ids.some((v) => v !== u && runs[v].some((x) => x.a <= r.a && x.b >= r.b && (x.n > r.n || (x.a === r.a && x.b === r.b && tot[v] > tot[u]))));
+      const excused = (u, r) => ids.some((v) => v !== u && runs[v].some((x) => x.a <= r.a && x.b >= r.b && x.n > r.n));
       members.forEach((m) => {
         m.off = runs[m.uid].filter((r) => !excused(m.uid, r)).reduce((t, r) => t + r.n, 0) + (OFF_BEFORE[m.uid] || 0);
         if (OFF_BEFORE[m.uid]) m.offBefore = OFF_BEFORE[m.uid];
