@@ -16,7 +16,6 @@ const SQUAD = {
   6079067379: "Legolorde22",
   677658744: "kxngcebu",
 };
-const PAIRS = [[216657469, 3083204118], [6079067379, 677658744]];
 const MAX_CYCLES = 600; // more than a 6-day season (432 cycles)
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -418,10 +417,25 @@ export async function main() {
       s: s0, pts: p4.points - openRec.p[LEAGUE], scored: scoredNow,
       per: Object.fromEntries(members.map((x) => [x.uid, openRec.m && openRec.m[x.uid] != null ? x.points - openRec.m[x.uid] : null])),
     } : { s: s0, pts: null, scored: scoredNow, per: null };
+    // Top 100 at the end, three hypotheses: every other team keeps its last-6 h pace, or speeds up
+    // steadily (linearly) to 2.4k or 3.2k per Turkey by the end (a team already faster keeps its pace).
+    // We stay at our last-6 h pace. The 100th best other finish is the line we must beat.
+    const L = turkeysLeft, v6 = (n) => pace(n, 18) ?? pace(n, 72);
+    const myV = v6(LEAGUE) ?? 0, others = rows.filter((r) => r.n !== LEAGUE);
+    const outlook = L && others.length >= 100 ? [null, 2400, 3200].map((T) => {
+      const fin = others.map((r) => { const v = v6(r.n); if (v == null) return r.p; return r.p + L * (T == null ? v : (v + Math.max(v, T)) / 2); }).sort((a, b) => b - a);
+      const line = fin[99], myFin = p4.points + L * myV;
+      return {
+        T, line: round(line), need: round(Math.max(0, (line - p4.points) / L)),
+        rank: 1 + fin.filter((f) => f > myFin).length,
+        stopRank: 1 + fin.filter((f) => f > p4.points).length, // teams we track: the top 300
+        miss: myV > 0 ? Math.max(0, Math.min(L, Math.floor(L - (line - p4.points) / myV))) : null,
+      };
+    }) : null;
     p4out = {
-      ...me, thisTurkey, icon: p4.icon, reward: p4.reward, members, turkeys: teamTurkeys, checkedTurkey: checkS, pack: packOut, projRanks,
+      ...me, thisTurkey, icon: p4.icon, reward: p4.reward, members, turkeys: teamTurkeys, checkedTurkey: checkS, pack: packOut, projRanks, outlook, tracked: others.length + 1, v6: round(myV),
       gaps: Object.fromEntries(marks.filter((x) => [10, 25, 100].includes(x.r)).map((x) => [x.r, x.p - p4.points])),
-      need100: c100 && turkeysLeft ? round((c100.proj - p4.points) / turkeysLeft) : null,
+      need100: outlook ? outlook[0].need : null,
     };
     // rivals: nine places either side of P4
     const myR = p4.place || 999;
@@ -448,14 +462,12 @@ export async function main() {
       const s = mb.streak ?? 0;
       const due = s === 1 || s === 3 || (s > 3 && (s - 3) % 9 === 0);
       if (live && s > 0 && due && st.notified !== s) {
-        const partner = PAIRS.find((p) => p.includes(mb.uid))?.find((u) => u !== mb.uid);
         // the alert uses Brussels time; the site log gets {{t:…}} tokens shown in each viewer's time zone
         const msg = (fmt) => {
           const last = mb.lastAt ? fmt(mb.lastAt) : "?";
           let t = s === 1
             ? `${mb.name} didn't score on the ${fmt(checkS)} Turkey (last points ${last}).`
             : `${mb.name} has missed ${s} Turkeys in a row (last points ${last}).`;
-          if (s === 1 && partner && downNow.has(partner)) t += ` ${SQUAD[partner]} is down too: the whole pair is out.`;
           return t;
         };
         lines.push(msg(hhmm));

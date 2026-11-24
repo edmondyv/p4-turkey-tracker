@@ -181,7 +181,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .pair{background:var(--card2);border-radius:var(--r-chip);padding:8px 10px}
 .pair h3{font-size:13px;color:var(--mute);font-weight:600;display:flex;justify-content:space-between}
 .mem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
-.pair h3+.mem{border-top:0}
+.pair h3+.mem,.pair>.mem:first-child{border-top:0}
 .st{width:12px;height:12px;border-radius:50%;background:var(--dim)}
 .st.ok{background:var(--leaf)} .st.bad{background:var(--apple);animation:pulse 1.4s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(240,69,79,.7)}80%{box-shadow:0 0 0 9px rgba(240,69,79,0)}}
@@ -369,6 +369,16 @@ button{font:inherit;color:inherit;cursor:pointer}
 .proj div{background:var(--card2);border-radius:var(--r-chip);padding:8px 10px}
 .proj b{font:600 20px var(--display);display:block}
 .proj small{color:var(--mute);font-size:11.5px;font-weight:600}
+.fin3{margin-top:12px}
+.fin3 .fl{font-size:12px;font-weight:700;color:var(--mute);margin-bottom:6px}
+.ftiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.ft{background:var(--card2);border-radius:var(--r-chip);padding:8px 9px;min-width:0}
+.ft small{display:block;font-size:11px;color:var(--mute);font-weight:600;line-height:1.25;min-height:2.5em}
+.ft b{display:block;font:600 24px/1.1 var(--display);margin:3px 0 2px}
+.ft em{display:block;font-style:normal;font-size:11.5px;font-weight:700;color:var(--mute);line-height:1.3}
+.ft.in b{color:var(--leaf)} .ft.out b{color:#ff8d94} .ft.out em{color:#ff8d94}
+.fstop{margin-top:8px;font-size:12px;color:var(--mute);font-weight:600}
+.fstop b{color:var(--ink)}
 .verdict{margin-top:10px;padding:9px 11px;border-radius:var(--r-chip);font-weight:700;font-size:13px}
 .verdict.good{background:rgba(124,203,78,.14);color:var(--leaf)} .verdict.bad{background:rgba(240,69,79,.14);color:#ff8d94} .verdict.meh{background:rgba(246,169,59,.14);color:var(--caramel2)}
 
@@ -498,7 +508,7 @@ footer{align-items:center}
         <div><b class="num" id="thisT">–</b><small id="thisTl">This Turkey so far</small></div>
       </div>
       <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px"><span>Our last 12 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:#5cc8e0"></i>2k+</span><span><i style="background:var(--leaf)"></i>2k</span><span><i style="background:var(--caramel)"></i>less</span><span><i style="background:var(--apple)"></i>0</span></span></div>
-      <div class="strip" id="strip" title="Team points on each Turkey: 2k means both pairs killed"></div>
+      <div class="strip" id="strip" title="Team points on each Turkey"></div>
       <div class="lands" id="lands"></div>
     </section>
 
@@ -507,16 +517,11 @@ footer{align-items:center}
       <table class="pt"><thead><tr><th></th><th class="r me">P4</th><th class="r" id="packLbl" title="Median of the 20 teams just above us">20 ahead</th><th class="r">#100</th></tr></thead><tbody id="paceRows"></tbody></table>
       <div class="ptkey"><span class="k win">faster</span><span class="k lose">slower</span>than the 20 teams just ahead</div>
       <div class="packline" id="packLine"></div>
-      <div class="proj p3">
+      <div class="proj">
         <div><b class="num" id="pr3">–</b><small>Rank in 3 h</small></div>
         <div><b class="num" id="pr12">–</b><small>Rank in 12 h</small></div>
-        <div><b class="num" id="prF">–</b><small>Rank at the finish</small></div>
       </div>
-      <div class="proj">
-        <div><b class="num" id="projMe">–</b><small>P4 at the finish</small></div>
-        <div><b class="num" id="proj100">–</b><small>#100 at the finish</small></div>
-      </div>
-      <div class="verdict meh" id="verdict">–</div>
+      <div class="fin3" id="fin3"></div>
     </section>
 
     <section class="card rivals" aria-label="Rivals">
@@ -603,7 +608,7 @@ footer{align-items:center}
 const qs = new URLSearchParams(location.search);
 const DATA_URL = qs.get("data") || "https://raw.githubusercontent.com/edmondyv/p4-turkey-tracker/data/dashboard.json";
 const NTFY_TOPIC = "";
-const PAIRS = [[216657469, 3083204118], [6079067379, 677658744]];
+const SQUAD_ORDER = [216657469, 3083204118, 6079067379, 677658744]; // everyone kills solo with an alt
 const CYCLE = 1200, UP = 900;
 const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Brussels"; } catch (e) { return "Europe/Brussels"; } })(); // each viewer's own time zone
 const $ = (id) => document.getElementById(id);
@@ -771,9 +776,8 @@ function renderSquad(d) {
   const mem = Object.fromEntries(d.p4.members.map((m) => [m.uid, m]));
   const pres = P && P.presence && P.presence.list ? Object.fromEntries(P.presence.list.map((x) => [x.userId, x])) : {};
   const down = [];
-  $("pairs").innerHTML = PAIRS.map((pair, i) => {
-    const ok = pair.every((u) => mem[u] && mem[u].streak === 0);
-    const rows = pair.map((u) => {
+  $("pairs").innerHTML = SQUAD_ORDER.map((u) => {
+    const rows = [u].map((u) => {
       const m = mem[u]; if (!m) return "";
       const s = m.streak, pr = pres[u];
       const status = s == null ? ["", "No points yet"] : s === 0 ? ["ok", `<span class="up">Scored</span> at ${m.lastAt ? hm(m.lastAt) : "?"}`] : ["bad", `<span class="bad-t">Missed ${s}</span>, last at ${m.lastAt ? hm(m.lastAt) : "?"}`];
@@ -788,7 +792,7 @@ function renderSquad(d) {
       const dot = av ? `<span class="ava"><img src="${av}" alt="" loading="lazy"><span class="st ${status[0]}"></span></span>` : `<span class="st ${status[0]}" title="${presTxt}"></span>`;
       return `<div class="mem">${dot}<div><b>${esc(m.name)}</b><small>${status[1]}</small>${lastV != null || liveV ? `<small class="lt">${lastV != null ? `Last Turkey <b class="${lastV >= 600 ? "hiv" : ""}">${full(lastV)}</b>` : ""}${liveV ? `${lastV != null ? ", " : ""}now <b class="up">+${full(liveV)}</b>` : ""}</small>` : ""}<div class="bars" title="Points on each of the last 12 Turkeys">${bars}</div></div><div class="p num">${k(m.points)}</div></div>`;
     }).join("");
-    return `<div class="pair"><h3><span>Pair ${i ? "B" : "A"}</span><span class="${ok ? "up" : "down"}">${ok ? "killing" : "short"}</span></h3>${rows}</div>`;
+    return `<div class="pair">${rows}</div>`;
   }).join("");
   const b = $("banner");
   if (down.length) { b.className = "banner bad show"; b.textContent = `${down.join(" and ")} ${down.length > 1 ? "aren't" : "isn't"} scoring. Probably disconnected: check in.`; }
@@ -803,16 +807,18 @@ function renderPace(d) {
     return `<tr><td class="lab">${l}</td><td class="r me num"><span class="${cls}">${k(a)}</span></td><td class="r o num">${k(e)}</td><td class="r o num">${k(b)}</td></tr>`; }).join("");
   if (pk.n) { $("packLbl").textContent = `#${pk.from}–${p.r - 1}`; $("packLine").innerHTML = `Over the last hour we're faster than <b>${pk.slower} of the ${pk.n}</b> teams just ahead.`; }
   const pr = p.projRanks || {}; const rk = (r) => r == null ? "–" : "#" + r;
-  $("pr3").textContent = rk(pr.h3); $("pr12").textContent = rk(pr.h12); $("prF").textContent = rk(pr.finish);
-  [["pr3", pr.h3], ["pr12", pr.h12], ["prF", pr.finish]].forEach(([id, r]) => { $(id).className = "num " + (r == null ? "" : r <= 100 ? "up" : r < p.r ? "gold" : r > p.r ? "down" : ""); });
-  $("projMe").textContent = k(p.proj); $("proj100").textContent = k(c.proj);
-  const v = $("verdict");
-  if (p.need100 == null) { v.className = "verdict meh"; v.textContent = "Projection needs a few Turkeys of history."; }
+  $("pr3").textContent = rk(pr.h3); $("pr12").textContent = rk(pr.h12);
+  [["pr3", pr.h3], ["pr12", pr.h12]].forEach(([id, r]) => { $(id).className = "num " + (r == null ? "" : r <= 100 ? "up" : r < p.r ? "gold" : r > p.r ? "down" : ""); });
+  // at the finish: where we end at our current pace if other teams keep theirs or speed up to 2.4k / 3.2k
+  const o = p.outlook;
+  if (!o) $("fin3").innerHTML = '<div class="fstop">The finish projection needs a few hours of history.</div>';
   else {
-    const cur = p.h6 ?? p.h1 ?? p.since;
-    const ok = p.proj >= c.proj;
-    v.className = "verdict " + (ok ? "good" : cur >= p.need100 * .95 ? "meh" : "bad");
-    v.textContent = ok ? `On track for the top 100. Keep ${k(p.need100)} per Turkey or more.` : `Need ${k(p.need100)} per Turkey from now on to reach the top 100. We're doing ${k(cur)}.`;
+    const hrs = (n) => (n >= 3 ? ` (${Math.round(n / 3)} h)` : "");
+    const lab = { null: "Teams keep their pace", 2400: "All teams reach 2.4k", 3200: "All teams reach 3.2k" };
+    const s0 = o[0], stopOut = s0.stopRank > 100;
+    $("fin3").innerHTML = `<div class="fl">At the finish, if we keep ${k(p.v6)} per Turkey</div><div class="ftiles">` +
+      o.map((x) => `<div class="ft ${x.rank <= 100 ? "in" : "out"}" title="#100 would finish near ${full(x.line)} points"><small>${lab[x.T]}</small><b class="num">#${x.rank}</b><em>${x.rank <= 100 ? `${x.miss} Turkey${x.miss === 1 ? "" : "s"} to spare${hrs(x.miss)}` : `need ${k(x.need)} per Turkey`}</em></div>`).join("") +
+      `</div><div class="fstop">${stopOut ? `If we all stopped now, we'd drop out of the top 100 (about <b>#${s0.stopRank >= 240 ? s0.stopRank + "+" : s0.stopRank}</b>).` : `If we all stopped now, we'd still finish in the top 100 (about <b>#${s0.stopRank}</b>).`}</div>`;
   }
   const lt = d.ref && d.ref.lastTurkeyAt;
   const lbl = lt ? `${hm(lt)} Turkey` : "Last Turkey";
