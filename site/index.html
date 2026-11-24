@@ -184,6 +184,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .pair h3+.mem,.pair>.mem:first-child{border-top:0}
 .mem .nmr{display:flex;flex-wrap:wrap;align-items:center;gap:3px 7px}
 .mem .off{padding:1px 7px;border-radius:999px;font:700 10.5px var(--text);color:#ff9aa0;background:rgba(240,69,79,.14);white-space:nowrap}
+.mem .off i{font-style:normal;opacity:.75;margin-left:3px;padding-left:5px;border-left:1px solid currentColor}
 .mem .off.none{color:var(--dim);background:rgba(255,241,224,.06)}
 .st{width:12px;height:12px;border-radius:50%;background:var(--dim)}
 .st.ok{background:var(--leaf)} .st.bad{background:var(--apple);animation:pulse 1.4s infinite}
@@ -819,7 +820,7 @@ function renderSquad(d) {
       const av = P && P.avatars && P.avatars[u];
       const dot = av ? `<span class="ava"><img src="${av}" alt="" loading="lazy"><span class="st ${status[0]}"></span></span>` : `<span class="st ${status[0]}" title="${presTxt}"></span>`;
       const offMin = (m.off || 0) * 20, offTxt = !offMin ? "0 h" : offMin < 60 ? `${offMin} min` : `${Math.floor(offMin / 60)} h${offMin % 60 ? " " + String(offMin % 60).padStart(2, "0") : ""}`;
-      const offTag = m.off != null ? `<span class="off${m.off ? "" : " none"}" title="Time without scoring since ${d.p4.offFrom ? hm(d.p4.offFrom) + " " + new Date(d.p4.offFrom * 1000).toLocaleDateString("en-GB", { weekday: "short", timeZone: TZ }) : "tracking started"}. ${m.offBefore ? ` Includes ${Math.floor(m.offBefore * 20 / 60)} h ${String(m.offBefore * 20 % 60).padStart(2, "0")} from before tracking.` : ""} Not counted: Turkeys nobody scored, and misses caused by a teammate who was out longer.">offline ${offTxt}</span>` : "";
+      const offTag = m.off != null ? `<span class="off${m.off ? "" : " none"}" title="Time without scoring since ${d.p4.offFrom ? hm(d.p4.offFrom) + " " + new Date(d.p4.offFrom * 1000).toLocaleDateString("en-GB", { weekday: "short", timeZone: TZ }) : "tracking started"}. ${m.offBefore ? ` Includes ${Math.floor(m.offBefore * 20 / 60)} h ${String(m.offBefore * 20 % 60).padStart(2, "0")} from before tracking.` : ""} Not counted: Turkeys nobody scored, and misses caused by a teammate who was out longer.">offline ${offTxt}${m.off ? ` <i>${m.off} Turkey${m.off === 1 ? "" : "s"}</i>` : ""}</span>` : "";
       return `<div class="mem">${dot}<div><div class="nmr"><b>${esc(m.name)}</b>${offTag}</div><small>${status[1]}</small>${lastV != null || liveV ? `<small class="lt">${lastV != null ? `Last Turkey <b>${full(lastV)}</b>` : ""}${liveV ? `${lastV != null ? ", " : ""}now <b class="up">+${full(liveV)}</b>` : ""}</small>` : ""}<div class="bars" title="Points on each of the last 12 Turkeys">${bars}</div></div><div class="p num">${k(m.points)}</div></div>`;
     }).join("");
     return `<div class="pair">${rows}</div>`;
