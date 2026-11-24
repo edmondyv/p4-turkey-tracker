@@ -193,11 +193,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mem .bad-t{color:var(--apple);font-weight:700}
 .bars{display:flex;gap:2px;align-items:flex-end;height:18px;margin-top:3px}
 .bars i{display:block;width:6px;border-radius:2px;background:var(--leaf);opacity:.9}
-.bars i.hi{background:#5cc8e0} .bars i.ep{background:#bb72f5} .bars i.pt{background:var(--caramel)}
+.bars i.hi{background:#5cc8e0} .bars i.ep{background:#9d6bff} .bars i.pt{background:var(--caramel)}
 .bars i.z{background:var(--apple);height:3px!important;opacity:1}
 .bars i.n{background:var(--line);height:3px!important}
 .mem .p{font:600 16px var(--display);text-align:right;align-self:start}
-.mem small.lt{color:var(--mute)} .mem small.lt b{color:var(--ink);display:inline;font-weight:700} .mem small.lt b.hiv{color:#8fe3f5} .mem small.lt b.epv{color:#d7a6ff} .mem small.lt b.up{color:var(--leaf)}
+.mem small.lt{color:var(--mute)} .mem small.lt b{color:var(--ink);display:inline;font-weight:700} .mem small.lt b.hiv{color:#8fe3f5} .mem small.lt b.epv{color:#b99bff} .mem small.lt b.up{color:var(--leaf)}
 .mem .p small{font:600 11px var(--text)}
 
 /* solo event: hidden until the apple is tapped 10 times */
@@ -349,9 +349,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mini b{display:block;font:600 18px var(--display)}
 .mini small{color:var(--mute);font-size:11.5px;font-weight:600}
 
-.strip{display:grid;grid-template-columns:repeat(18,minmax(0,1fr));gap:3px;align-items:end;height:60px;padding-top:14px}
+.strip{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:3px;align-items:end;height:60px;padding-top:14px}
 .strip div{border-radius:5px 5px 2px 2px;background:var(--leaf);position:relative;min-height:4px;transition:height .6s}
-.strip div.hi{background:#5cc8e0} .strip div.ep{background:#bb72f5;box-shadow:0 0 8px rgba(187,114,245,.45)} .strip div.half{background:var(--caramel)} .strip div.zero{background:var(--apple)} .strip div.na{background:var(--line)}
+.strip div.hi{background:#5cc8e0} .strip div.ep{background:linear-gradient(180deg,#ff7ae6,#d23cff);box-shadow:0 0 10px rgba(255,84,220,.6),inset 0 1px 0 rgba(255,255,255,.35)}
+.strip div.ep span{color:#ff9cec} .strip div.half{background:var(--caramel)} .strip div.zero{background:var(--apple)} .strip div.na{background:var(--line)}
 .strip div span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font:600 10px var(--text);color:var(--mute);margin-bottom:2px;letter-spacing:-.2px}
 @media (max-width:420px){.strip div span{font-size:9px}}
 .lands{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
@@ -512,7 +513,7 @@ footer{align-items:center}
         <div><b class="num" id="hLeft">–</b><small>Until the end</small></div>
         <div><b class="num" id="thisT">–</b><small id="thisTl">This Turkey so far</small></div>
       </div>
-      <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px"><span>Our last 18 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:#bb72f5"></i>3k+</span><span><i style="background:#5cc8e0"></i>2k+</span><span><i style="background:var(--leaf)"></i>2k</span><span><i style="background:var(--caramel)"></i>less</span><span><i style="background:var(--apple)"></i>0</span></span></div>
+      <div class="sub" style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px"><span>Our last 15 Turkeys</span><span class="legend" style="margin:0"><span><i style="background:linear-gradient(180deg,#ff7ae6,#d23cff);box-shadow:0 0 6px rgba(255,84,220,.6)"></i>3k+</span><span><i style="background:#5cc8e0"></i>2k+</span><span><i style="background:var(--leaf)"></i>2k</span><span><i style="background:var(--caramel)"></i>less</span><span><i style="background:var(--apple)"></i>0</span></span></div>
       <div class="strip" id="strip" title="Team points on each Turkey"></div>
       <div class="lands" id="lands"></div>
     </section>
@@ -790,14 +791,14 @@ function renderSquad(d) {
       if (prevStreak[u] === 0 && s > 0) notify(`${m.name} missed the last Turkey`);
       prevStreak[u] = s;
       const presTxt = pr ? (pr.type === 2 ? "in game" : pr.type === 1 ? "online" : "status hidden") : "";
-      const tk = m.turkeys || [], mx = Math.max(700, ...tk.filter((v) => v != null));
-      const bars = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i class="${v >= 750 ? "ep" : v >= 600 ? "hi" : v >= 450 ? "" : "pt"}" style="height:${Math.max(4, 18 * v / mx)}px" title="${full(v)}"></i>`).join("");
+      const tk = (m.turkeys || []).slice(-15), mx = Math.max(700, ...tk.filter((v) => v != null));
+      const bars = tk.map((v) => v == null ? '<i class="n"></i>' : v <= 0 ? '<i class="z"></i>' : `<i class="${v > 850 ? "ep" : v >= 600 ? "hi" : v >= 450 ? "" : "pt"}" style="height:${Math.max(4, 18 * v / mx)}px" title="${full(v)}"></i>`).join("");
       const lastV = tk.length ? tk[tk.length - 1] : null, liveV = d.p4.thisTurkey && d.p4.thisTurkey.per ? d.p4.thisTurkey.per[u] : null;
       const av = P && P.avatars && P.avatars[u];
       const dot = av ? `<span class="ava"><img src="${av}" alt="" loading="lazy"><span class="st ${status[0]}"></span></span>` : `<span class="st ${status[0]}" title="${presTxt}"></span>`;
       const offMin = (m.off || 0) * 20, offTxt = !offMin ? "0 h" : offMin < 60 ? `${offMin} min` : `${Math.floor(offMin / 60)} h${offMin % 60 ? " " + String(offMin % 60).padStart(2, "0") : ""}`;
       const offTag = m.off != null ? `<span class="off${m.off ? "" : " none"}" title="Time without scoring since ${d.p4.offFrom ? hm(d.p4.offFrom) + " " + new Date(d.p4.offFrom * 1000).toLocaleDateString("en-GB", { weekday: "short", timeZone: TZ }) : "tracking started"}. ${m.offBefore ? ` Includes ${Math.floor(m.offBefore * 20 / 60)} h ${String(m.offBefore * 20 % 60).padStart(2, "0")} from before tracking.` : ""} Not counted: Turkeys nobody scored, and misses caused by a teammate who was out longer.">offline ${offTxt}</span>` : "";
-      return `<div class="mem">${dot}<div><div class="nmr"><b>${esc(m.name)}</b>${offTag}</div><small>${status[1]}</small>${lastV != null || liveV ? `<small class="lt">${lastV != null ? `Last Turkey <b class="${lastV >= 750 ? "epv" : lastV >= 600 ? "hiv" : ""}">${full(lastV)}</b>` : ""}${liveV ? `${lastV != null ? ", " : ""}now <b class="up">+${full(liveV)}</b>` : ""}</small>` : ""}<div class="bars" title="Points on each of the last 12 Turkeys">${bars}</div></div><div class="p num">${k(m.points)}</div></div>`;
+      return `<div class="mem">${dot}<div><div class="nmr"><b>${esc(m.name)}</b>${offTag}</div><small>${status[1]}</small>${lastV != null || liveV ? `<small class="lt">${lastV != null ? `Last Turkey <b class="${lastV > 850 ? "epv" : lastV >= 600 ? "hiv" : ""}">${full(lastV)}</b>` : ""}${liveV ? `${lastV != null ? ", " : ""}now <b class="up">+${full(liveV)}</b>` : ""}</small>` : ""}<div class="bars" title="Points on each of the last 12 Turkeys">${bars}</div></div><div class="p num">${k(m.points)}</div></div>`;
     }).join("");
     return `<div class="pair">${rows}</div>`;
   }).join("");
@@ -836,7 +837,7 @@ function renderPace(d) {
   const nIn = (tt.scored || []).length;
   $("thisT").textContent = tt.pts == null ? "–" : "+" + full(tt.pts);
   $("thisTl").textContent = tt.s ? `${hm(tt.s)} Turkey, ${nIn}/4 scored` : "This Turkey so far";
-  const tk = (p.turkeys || []).slice(-18), full2 = 2000;
+  const tk = (p.turkeys || []).slice(-15), full2 = 2000;
   const smax = Math.max(2500, ...tk.map((t) => t.pts || 0));
   $("strip").innerHTML = tk.map((t) => { const v = t.pts; const cls = v == null ? "na" : v <= 0 ? "zero" : v >= 3000 ? "ep" : v > 2050 ? "hi" : v >= 1950 ? "" : "half";
     return `<div class="${cls}" style="height:${v == null ? 4 : Math.max(4, v / smax * 44)}px" title="${hm(t.s)} Turkey: ${v == null ? "no data" : full(v)}">${v != null ? `<span>${(v / 1000).toFixed(1)}</span>` : ""}</div>`; }).join("");
