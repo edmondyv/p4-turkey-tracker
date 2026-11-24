@@ -453,7 +453,8 @@ export async function main() {
     // Top 100 at the end, three hypotheses. Each other team starts from its last-6 h pace, then:
     // - keeps it
     // - speeds up to 3k per Turkey by Wed 25 Nov 23:00 CET, then holds it
-    // - worst case: 3.2k by Wed 09:00 CET, 3.6k by Wed 23:00 CET, then holds it
+    // - worst case: 3.2k by Wed 09:00 CET, 4k by Wed 23:00 CET, then holds it (paid boosts let strong
+    //   players solo a Turkey: 1,000 each). Targets never exceed 1,000 per team member.
     // Teams speed up early in the event, not in the last day, so the targets have fixed deadlines and the pace
     // is flat afterwards. Between deadlines the pace rises in a straight line; a team already faster keeps its
     // pace; a deadline already past means the team is at that pace from now. We stay at our last-6 h pace.
@@ -461,11 +462,11 @@ export async function main() {
     const L = turkeysLeft, v6 = (n) => pace(n, 18) ?? pace(n, 72);
     const myV = me.h6 ?? v6(LEAGUE) ?? 0, others = rows.filter((r) => r.n !== LEAGUE);
     const W09 = Date.UTC(2026, 10, 25, 8, 0) / 1000, W23 = Date.UTC(2026, 10, 25, 22, 0) / 1000;
-    const SCEN = [{ T: null, steps: [] }, { T: 3000, steps: [[W23, 3000]] }, { T: 3600, steps: [[W09, 3200], [W23, 3600]] }];
-    const gain = (v, steps) => {
+    const SCEN = [{ T: null, steps: [] }, { T: 3000, steps: [[W23, 3000]] }, { T: 4000, steps: [[W09, 3200], [W23, 4000]] }];
+    const gain = (v, steps, cap) => {
       if (!steps.length) return L * v;
       let a = v; const fut = [];
-      for (const [t, r] of steps) { if (t <= now) a = Math.max(a, r); else fut.push([t, Math.max(v, r)]); }
+      for (const [t, r0] of steps) { const r = Math.min(r0, cap); if (t <= now) a = Math.max(a, r); else fut.push([t, Math.max(v, r)]); }
       const knots = [[now, a], ...fut];
       let sum = 0;
       for (let i = 0; i < L; i++) {
@@ -476,7 +477,7 @@ export async function main() {
       return sum;
     };
     const outlook = L && others.length >= 100 ? SCEN.map(({ T, steps }) => {
-      const fin = others.map((r) => { const v = v6(r.n); if (v == null) return r.p; return r.p + gain(v, steps); }).sort((a, b) => b - a);
+      const fin = others.map((r) => { const v = v6(r.n); if (v == null) return r.p; return r.p + gain(v, steps, 1000 * (r.m || 4)); }).sort((a, b) => b - a);
       const line = fin[99], myFin = p4.points + L * myV;
       return {
         T, steps, line: round(line), need: round(Math.max(0, (line - p4.points) / L)),
