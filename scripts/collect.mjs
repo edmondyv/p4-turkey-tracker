@@ -387,6 +387,23 @@ export async function main() {
       const turkeys = done12.map((c) => exact(uid, c) ?? diff(recAt(c + CYCLE)?.m?.[uid], recAt(c)?.m?.[uid]));
       return { uid, name: SQUAD[uid], display: c.display || c.name, points: c.points, lastAt: c.lastAt, streak, h1: round(pace(`m:${uid}`, 3)), turkeys };
     });
+    // Time each player went without scoring, since per-player tracking started. Not counted: Turkeys
+    // nobody on the team scored (game-side), and a miss streak that sits entirely inside a teammate's
+    // longer streak (that teammate was the cause, e.g. a partner who couldn't kill alone).
+    {
+      const ids = Object.keys(SQUAD), got = (u, c) => hist.mt.by[u]?.[c] > 0, runs = {};
+      for (const u of ids) {
+        runs[u] = []; let cur = null;
+        for (let c = mtFrom; c <= checkS; c += CYCLE) {
+          if (ids.every((v) => !got(v, c))) continue; // nobody scored this one
+          if (!got(u, c)) { if (!cur) cur = { a: c, b: c, n: 0 }; cur.b = c; cur.n++; }
+          else if (cur) { runs[u].push(cur); cur = null; }
+        }
+        if (cur) runs[u].push(cur);
+      }
+      const off = Object.fromEntries(ids.map((u) => [u, runs[u].filter((r) => !ids.some((v) => v !== u && runs[v].some((x) => x.a <= r.a && x.b >= r.b && x.n > r.n))).reduce((t, r) => t + r.n, 0)]));
+      members.forEach((m) => { m.off = off[m.uid] ?? 0; });
+    }
     const uids = p4.members.map((x) => x.uid);
     const exactTeam = (c) => (c >= mtFrom ? uids.reduce((a, u) => a + exact(u, c), 0) : undefined);
     const teamTurkeys = done12.map((c) => ({ s: c, pts: exactTeam(c) ?? diff(recAt(c + CYCLE)?.p?.[LEAGUE], recAt(c)?.p?.[LEAGUE]) }));
@@ -441,7 +458,7 @@ export async function main() {
       };
     }) : null;
     p4out = {
-      ...me, thisTurkey, icon: p4.icon, reward: p4.reward, members, turkeys: teamTurkeys, checkedTurkey: checkS, pack: packOut, projRanks, outlook, tracked: others.length + 1, v6: round(myV),
+      ...me, thisTurkey, icon: p4.icon, reward: p4.reward, members, offFrom: mtFrom, turkeys: teamTurkeys, checkedTurkey: checkS, pack: packOut, projRanks, outlook, tracked: others.length + 1, v6: round(myV),
       gaps: Object.fromEntries(marks.filter((x) => [10, 25, 100].includes(x.r)).map((x) => [x.r, x.p - p4.points])),
       need100: outlook ? outlook[0].need : null,
     };
