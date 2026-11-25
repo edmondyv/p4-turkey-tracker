@@ -348,6 +348,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 .alt{background:var(--card2);border-radius:var(--r-chip);padding:10px;margin-top:10px}
 .alt-h{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap;margin-bottom:8px}
 .alt-h h3{font-size:14px} .alt-h span{font-size:12px}
+.alt-h .hpin{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
+.alt-h .hpin .f{display:flex;align-items:center;gap:3px;background:var(--deep);border:2px solid var(--line);border-radius:8px;padding:0 6px}
+.alt-h .hpin .f:focus-within{border-color:var(--caramel)}
+.alt-h .hpin input{width:34px;border:0;background:none;color:var(--ink);font:600 14px var(--display);padding:3px 0;outline:none;text-align:right}
+.alt-h .hpin i{font-style:normal;color:var(--dim);font-weight:700;font-size:12px}
 .alt-in{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .alt-in label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;font-weight:600;color:var(--mute);min-width:0}
 .alt-in .f{display:flex;align-items:center;gap:4px;background:var(--deep);border:2px solid var(--line);border-radius:10px;padding:0 8px;transition:border-color .15s}
@@ -546,7 +551,7 @@ footer{align-items:center}
       <header><h2>Squad</h2><span class="mute" id="squadNote">Checked on every Turkey</span></header>
       <div class="pairs" id="pairs"></div>
       <div class="alt" id="altCalc">
-        <div class="alt-h"><h3>Alt timer</h3><span class="mute">Turkey: 7B HP, alive 15:00. Both hit from the start.</span></div>
+        <div class="alt-h"><h3>Alt timer</h3><label class="mute hpin">Turkey HP on your server<span class="f"><input id="acH" inputmode="decimal" autocomplete="off" value="7"><i>B</i></span></label></div>
         <div class="alt-in">
           <label>Main DPS<span class="f"><input id="acM" inputmode="decimal" autocomplete="off" value="6.35"><i>M</i></span></label>
           <label>Alt DPS<span class="f"><input id="acA" inputmode="decimal" autocomplete="off" value="1.35"><i>M</i></span></label>
@@ -1167,13 +1172,13 @@ function setSolo(on, fromTap) {
 // ---------- alt timer: when should the alt leave so the main keeps the biggest share?
 // Points are split by damage, so every second the alt hits costs the main. Both hit from the
 // start; the alt stays just long enough for the Turkey to die with the chosen time to spare.
-const AC = ["acM", "acA"], AP = ["apS", "apW", "apN"], TURKEY_HP = 7e9, TURKEY_LIFE = 900;
+const AC = ["acM", "acA", "acH"], AP = ["apS", "apW", "apN"], TURKEY_LIFE = 900;
 const numIn = (v, big, unit) => { const x = parseFloat(String(v).replace(",", ".").replace(/[^0-9.]/g, "")); return isFinite(x) && x > 0 ? (x >= big ? x : x * unit) : null; };
 const mmss = (t) => { t = Math.max(0, Math.round(t)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
 function altCalc() {
   // one notch (0.01M) under what was typed: the game rounds its display, and lower DPS keeps the alt longer (safer)
   const notch = (x) => (x == null ? null : Math.max(1e4, Math.floor((x - 1e4) / 1e4 + 1e-6) * 1e4));
-  const M = notch(numIn($("acM").value, 1e5, 1e6)), A = notch(numIn($("acA").value, 1e5, 1e6)), S = TURKEY_LIFE, H = TURKEY_HP;
+  const M = notch(numIn($("acM").value, 1e5, 1e6)), A = notch(numIn($("acA").value, 1e5, 1e6)), S = TURKEY_LIFE, H = numIn($("acH").value, 1e8, 1e9) || 7e9;
   const fm = (x) => (x / 1e6).toFixed(2);
   try { localStorage.setItem("p4.altcalc2", JSON.stringify(AC.map((id) => $(id).value))); } catch (e) {}
   const res = $("acRes");
@@ -1186,7 +1191,7 @@ function altCalc() {
   const zone = both > S || left < 20 ? "bad" : left < 30 ? "warn" : left <= 60 ? "ok" : "over";
   const zoneTxt = { bad: both > S ? "Won't die in time" : "Too tight", warn: "A bit tight", ok: "In the target window", over: "More than needed" }[zone];
   $("acAfk").innerHTML = `<div class="tl ${zone}"><b class="num">${both > S ? "–" : mmss(left)}</b></div><div><span class="zc ${zone}">${zoneTxt}</span><small>${both > S ? `Together it takes ${mmss(both)}` : "left when it dies"}<br>Aim for 0:30 to 1:00</small></div><div class="v"><b class="num">${afkPts.toLocaleString("en-US")}</b><small>main per Turkey</small></div>`;
-  const aFor = (sp) => H / (S - sp) - M, a30 = aFor(30), a60 = aFor(60), kd = (x) => `${Math.round(Math.abs(x) / 1e3)}k`;
+  const aFor = (sp) => H / (S - sp) - M, a30 = aFor(30), a60 = aFor(60), kd = (x) => (Math.abs(x) >= 1e6 ? `${(Math.abs(x) / 1e6).toFixed(2)}M` : `${Math.round(Math.abs(x) / 1e3)}k`);
   $("acAim").innerHTML = a30 <= 0 ? "" : `Alt DPS for 0:30 to 1:00 left: <b>${fm(a30)}M to ${fm(a60)}M</b>, the main then gets ${pts(M / (M + a30))} to ${pts(M / (M + a60))}. ` +
     (A < a30 ? `You're at ${fm(A)}M: add <b>${kd(a30 - A)} to ${kd(a60 - A)}</b>.` : A > a60 ? `You're at ${fm(A)}M, ${kd(A - a60)} above: weaker pets give the main more points.` : `You're at ${fm(A)}M, in the window.`);
   // Pets: assume the alt's DPS is proportional to its 15 pets' damage, calibrated on the team it has now
