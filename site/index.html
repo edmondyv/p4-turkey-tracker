@@ -1266,9 +1266,9 @@ function altNow() {
 }
 AN.forEach((id) => { $(id).addEventListener("input", () => { anAt = Date.now() / 1000; altNow(); }); });
 // Rebirth planner. Each rebirth adds 5% of base damage: DPS = base × (1 + 0.05 R) × zone bonus.
-// Zone bonuses over zone 1 measured on Ed's main at R9 and R10: zone 2 ×1.040, zone 3 ×1.078.
+// Zone bonuses over zone 1 fitted on Ed's main (R9 to R11, 11 readings, all within 0.01M but one): zone 2 ×1.042, zone 3 ×1.078.
 // One reading (rebirth, zone, DPS) is enough; it assumes the same pets, enchants and potions.
-const RB = ["rbR", "rbZ", "rbD"], ZONE_X = [1, 1.04, 1.078], MAX_REBIRTH = 20;
+const RB = ["rbR", "rbZ", "rbD"], ZONE_X = [1, 1.042, 1.078], MAX_REBIRTH = 20;
 function rbCalc() {
   const R = Math.round(Number($("rbR").value)), Z = Math.round(Number($("rbZ").value)), D = numIn($("rbD").value, 1e5, 1e6), out = $("rbOut");
   try { localStorage.setItem("p4.rb", JSON.stringify(RB.map((id) => $(id).value))); } catch (e) {}
@@ -1285,7 +1285,7 @@ function rbCalc() {
   const last = rows[rows.length - 1], solo = rows.find((o) => o.gap <= 0), hb = (H / 1e9).toFixed(1);
   const sum = solo ? (solo.r === rows[0].r ? `You can already solo a ${hb}B Turkey in zone 3.` : `Solo a ${hb}B Turkey in zone 3 from <b>Rebirth ${solo.r}</b>.`)
     : `At Rebirth ${MAX_REBIRTH} in zone 3 you'd do ${f2(at(MAX_REBIRTH, 3))}M: an alt still needs <b>+${f2(last.gap)}M</b> to kill a ${hb}B Turkey.`;
-  out.innerHTML = `<div class="alt-aim" style="margin-top:8px">${sum}</div><div class="alt-pt rb">${head}${body}</div><div class="alt-pmsg">DPS in millions. Missing: what an alt must add to the main in zone 3 for the Turkey to die with 0:10 left (${f2(need)}M total). +5% per rebirth, zone 2 about +4% and zone 3 about +7.8% over zone 1, same pets and enchants.</div>`;
+  out.innerHTML = `<div class="alt-aim" style="margin-top:8px">${sum}</div><div class="alt-pt rb">${head}${body}</div><div class="alt-pmsg">DPS in millions. Missing: what an alt must add to the main in zone 3 for the Turkey to die with 0:10 left (${f2(need)}M total). +5% per rebirth, zone 2 about +4.2% and zone 3 about +7.8% over zone 1, same pets and enchants.</div>`;
 }
 try { const rb = JSON.parse(localStorage.getItem("p4.rb") || "null"); if (Array.isArray(rb)) RB.forEach((id, i) => { if (rb[i]) $(id).value = rb[i]; }); } catch (e) {}
 RB.forEach((id) => { $(id).addEventListener("input", rbCalc); });
