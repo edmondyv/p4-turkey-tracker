@@ -392,6 +392,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .alt-pt>span.in{background:#2c4f2e} .alt-pt>span.in.l{color:var(--leaf)}
 .alt-pt>span.cur{box-shadow:inset 0 2px 0 var(--line),inset 0 -2px 0 var(--line)}
 .alt-pt>span.r{text-align:right}
+.alt-pt>span.kill{background:#4a4220} .alt-pt>span.kill.l{color:#ffd166}
+.alt-pt>span.gap{padding:0 6px;color:var(--dim);font-size:11px;line-height:1}
 .alt-pmsg{font-size:11.5px;color:var(--dim);font-weight:600;margin-top:6px;line-height:1.4}
 .alt-afk small{display:block;font-size:11.5px;color:var(--mute);font-weight:600;line-height:1.35}
 .alt-afk .v{text-align:right;flex:none}
@@ -584,6 +586,14 @@ footer{align-items:center}
           <div class="alt-lbl">Or the alt leaves early, at</div>
           <div class="alt-out" id="acOut"></div>
         </div>
+        <details class="alt-pets" open id="rbBox"><summary>Rebirth planner</summary>
+          <div class="alt-in three">
+            <label>Rebirth<span class="f"><input id="rbR" inputmode="numeric" autocomplete="off" value="11"></span></label>
+            <label>Zone<span class="f"><input id="rbZ" inputmode="numeric" autocomplete="off" value="1"><i>/3</i></span></label>
+            <label>DPS there<span class="f"><input id="rbD" inputmode="decimal" autocomplete="off" value="6.76"><i>M</i></span></label>
+          </div>
+          <div id="rbOut"></div>
+        </details>
         <div class="alt-note" id="acNote"></div>
       </div>
     </section>
@@ -1251,6 +1261,40 @@ function altNow() {
   $("anUse").onclick = () => { $("acA").value = (v / 1e6).toFixed(2); altCalc(); };
 }
 AN.forEach((id) => { $(id).addEventListener("input", () => { anAt = Date.now() / 1000; altNow(); }); });
+// Rebirth planner. Each rebirth adds 5% of base damage: DPS = base × (1 + 0.05 R) × zone bonus.
+// Zone bonuses over zone 1 measured on Ed's main at R9 and R10: zone 2 ×1.040, zone 3 ×1.078.
+// One reading (rebirth, zone, DPS) is enough; it assumes the same pets, enchants and potions.
+const RB = ["rbR", "rbZ", "rbD"], ZONE_X = [1, 1.04, 1.078];
+function rbCalc() {
+  const R = Math.round(Number($("rbR").value)), Z = Math.round(Number($("rbZ").value)), D = numIn($("rbD").value, 1e5, 1e6), out = $("rbOut");
+  try { localStorage.setItem("p4.rb", JSON.stringify(RB.map((id) => $(id).value))); } catch (e) {}
+  if (!(R >= 0 && R <= 200) || !(Z >= 1 && Z <= 3) || !D) { out.innerHTML = '<div class="alt-pmsg">Fill in your rebirth, the zone (1 to 3) and the DPS you see there.</div>'; return; }
+  const H = numIn($("acH").value, 1e8, 1e9) || 7e9, S = TURKEY_LIFE, base = D / ((1 + 0.05 * R) * ZONE_X[Z - 1]);
+  const at = (r, z) => base * (1 + 0.05 * r) * ZONE_X[z - 1], f2 = (x) => (x / 1e6).toFixed(2);
+  const rows = []; let kill = null, comfy = null;
+  for (let r = R; r <= R + 40; r++) {
+    const d3 = at(r, 3), left = S - H / d3;
+    if (kill == null && left >= 0) kill = r;
+    if (comfy == null && left >= 30) comfy = r;
+    rows.push({ r, dz: at(r, Z), d3, left });
+    if (comfy != null && r >= comfy + 1) break;
+  }
+  const show = rows.length > 14 ? rows.filter((o, i) => i === 0 || i >= rows.length - 12) : rows;
+  const head = Z < 3 ? `<span class="h">Rebirth</span><span class="h r">Zone ${Z}</span><span class="h r">Zone 3</span><span class="h r">Solo</span>` : `<span class="h">Rebirth</span><span class="h r">Zone 3</span><span class="h r"></span><span class="h r">Solo</span>`;
+  const body = show.map((o, i) => {
+    const cls = o.r === comfy ? "in" : o.r === kill ? "kill" : "", c = (v, x = "") => `<span class="${[cls, x, o.r === R ? "cur" : ""].filter(Boolean).join(" ")}">${v}</span>`;
+    const gap = i > 0 && show[i - 1].r !== o.r - 1 ? `<span class="gap">…</span><span class="gap"></span><span class="gap"></span><span class="gap"></span>` : "";
+    return gap + c(`${o.r}${o.r === R ? " (now)" : ""}`) + c(`${f2(Z < 3 ? o.dz : o.d3)}M`, "r") + c(Z < 3 ? `${f2(o.d3)}M` : "", "r") + c(o.left >= 0 ? `${mmss(o.left)} left` : "–", "r l");
+  }).join("");
+  const sum = kill == null ? `Even Rebirth ${R + 40} can't solo a ${(H / 1e9).toFixed(1)}B Turkey with this setup.`
+    : kill === R ? `You can already solo a ${(H / 1e9).toFixed(1)}B Turkey in zone 3.`
+    : `Solo a ${(H / 1e9).toFixed(1)}B Turkey in zone 3 from <b>Rebirth ${kill}</b>${comfy != null && comfy !== kill ? `, with 0:30 to spare from <b>Rebirth ${comfy}</b>` : ""}.`;
+  out.innerHTML = `<div class="alt-aim" style="margin-top:8px">${sum}</div><div class="alt-pt rb">${head}${body}</div><div class="alt-pmsg">+5% per rebirth. Zone 2 is about +4% and zone 3 about +7.8% over zone 1. Same pets, enchants and potions as now.</div>`;
+}
+try { const rb = JSON.parse(localStorage.getItem("p4.rb") || "null"); if (Array.isArray(rb)) RB.forEach((id, i) => { if (rb[i]) $(id).value = rb[i]; }); } catch (e) {}
+RB.forEach((id) => { $(id).addEventListener("input", rbCalc); });
+$("acH").addEventListener("input", rbCalc);
+rbCalc();
 try { const sp = JSON.parse(localStorage.getItem("p4.altpets") || "null"); if (Array.isArray(sp)) AP.forEach((id, i) => { if (sp[i]) $(id).value = sp[i]; }); } catch (e) {}
 [...AC, ...AP].forEach((id) => { $(id).addEventListener("input", altCalc); });
 altCalc();
