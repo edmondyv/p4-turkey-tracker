@@ -1202,8 +1202,9 @@ function altCalc() {
   try { localStorage.setItem("p4.altpets", JSON.stringify(AP.map((id) => $(id).value))); } catch (e) {}
   if (!ps || !pw || !(pn >= 0 && pn <= 15)) $("acPets").innerHTML = '<div class="alt-pmsg">Fill in both pet damages and how many strong pets the alt has now (0 to 15).</div>';
   else {
-    const sum0 = pn * ps + (15 - pn) * pw, kf = A / sum0;
-    const opts = Array.from({ length: 16 }, (_, n) => { const a = kf * (n * ps + (15 - n) * pw), b = H / (M + a); return { n, a, left: S - b, ok: b <= S, main: M / (M + a) }; });
+    // calibrate on the DPS as typed (so predictions match what the game shows); times still use the safety notch
+    const Araw = numIn($("acA").value, 1e5, 1e6), sum0 = pn * ps + (15 - pn) * pw, kf = Araw / sum0;
+    const opts = Array.from({ length: 16 }, (_, n) => { const a = kf * (n * ps + (15 - n) * pw), an = notch(a), b = H / (M + an); return { n, a, left: S - b, ok: b <= S, main: M / (M + an) }; });
     const inW = (o) => o.ok && o.left >= 30 && o.left <= 60;
     let show = opts.filter((o) => o.n === pn || (o.ok && o.left >= 15 && o.left <= 75));
     if (!opts.some(inW)) show = opts.filter((o) => o.n === pn || o.n === 0 || o.n === 15);
