@@ -394,7 +394,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .alt-pt>span.in{background:#2c4f2e} .alt-pt>span.in.l{color:var(--leaf)}
 .alt-pt>span.cur{box-shadow:inset 0 2px 0 var(--line),inset 0 -2px 0 var(--line)}
 .alt-pt>span.r{text-align:right}
-.alt-pt.rb{grid-template-columns:minmax(0,1.25fr) repeat(3,minmax(0,1fr)) minmax(0,.85fr)}
+.alt-pt.rb{grid-template-columns:minmax(0,1.25fr) repeat(3,minmax(0,1fr)) minmax(0,1fr)}
 .alt-pt>span.zc-me{color:var(--caramel)}
 .alt-pt>span.kill{background:#4a4220} .alt-pt>span.kill.l{color:#ffd166}
 .alt-pt>span.gap{padding:0 6px;color:var(--dim);font-size:11px;line-height:1}
@@ -1268,32 +1268,24 @@ AN.forEach((id) => { $(id).addEventListener("input", () => { anAt = Date.now() /
 // Rebirth planner. Each rebirth adds 5% of base damage: DPS = base × (1 + 0.05 R) × zone bonus.
 // Zone bonuses over zone 1 measured on Ed's main at R9 and R10: zone 2 ×1.040, zone 3 ×1.078.
 // One reading (rebirth, zone, DPS) is enough; it assumes the same pets, enchants and potions.
-const RB = ["rbR", "rbZ", "rbD"], ZONE_X = [1, 1.04, 1.078];
+const RB = ["rbR", "rbZ", "rbD"], ZONE_X = [1, 1.04, 1.078], MAX_REBIRTH = 20;
 function rbCalc() {
   const R = Math.round(Number($("rbR").value)), Z = Math.round(Number($("rbZ").value)), D = numIn($("rbD").value, 1e5, 1e6), out = $("rbOut");
   try { localStorage.setItem("p4.rb", JSON.stringify(RB.map((id) => $(id).value))); } catch (e) {}
-  if (!(R >= 0 && R <= 200) || !(Z >= 1 && Z <= 3) || !D) { out.innerHTML = '<div class="alt-pmsg">Fill in your rebirth, the zone (1 to 3) and the DPS you see there.</div>'; return; }
+  if (!(R >= 0 && R <= MAX_REBIRTH) || !(Z >= 1 && Z <= 3) || !D) { out.innerHTML = '<div class="alt-pmsg">Fill in your rebirth (0 to 20), the zone (1 to 3) and the DPS you see there.</div>'; return; }
   const H = numIn($("acH").value, 1e8, 1e9) || 8.7e9, S = TURKEY_LIFE, base = D / ((1 + 0.05 * R) * ZONE_X[Z - 1]);
   const at = (r, z) => base * (1 + 0.05 * r) * ZONE_X[z - 1], f2 = (x) => (x / 1e6).toFixed(2);
-  const rows = []; let kill = null, comfy = null;
-  for (let r = R; r <= R + 40; r++) {
-    const d3 = at(r, 3), left = S - H / d3;
-    if (kill == null && left >= 0) kill = r;
-    if (comfy == null && left >= 30) comfy = r;
-    rows.push({ r, dz: at(r, Z), d3, left });
-    if (comfy != null && r >= comfy + 1) break;
-  }
-  const show = rows.length > 14 ? rows.filter((o, i) => i === 0 || i >= rows.length - 12) : rows;
-  const head = `<span class="h">Rebirth</span><span class="h r">Zone 1</span><span class="h r">Zone 2</span><span class="h r">Zone 3</span><span class="h r">Solo</span>`;
-  const body = show.map((o, i) => {
-    const cls = o.r === comfy ? "in" : o.r === kill ? "kill" : "", c = (v, x = "") => `<span class="${[cls, x, o.r === R ? "cur" : ""].filter(Boolean).join(" ")}">${v}</span>`;
-    const gap = i > 0 && show[i - 1].r !== o.r - 1 ? `<span class="gap">…</span>${'<span class="gap"></span>'.repeat(4)}` : "";
-    return gap + c(`${o.r}${o.r === R ? " (now)" : ""}`) + [1, 2, 3].map((z) => c(`${f2(at(o.r, z))}`, z === Z ? "r zc-me" : "r")).join("") + c(o.left >= 0 ? `${mmss(o.left)}` : "–", "r l");
+  const need = H / (S - 10); // total DPS to kill it with 0:10 left
+  const rows = []; for (let r = Math.min(R, MAX_REBIRTH); r <= MAX_REBIRTH; r++) rows.push({ r, gap: need - at(r, 3) });
+  const head = `<span class="h">Rebirth</span><span class="h r">Zone 1</span><span class="h r">Zone 2</span><span class="h r">Zone 3</span><span class="h r">Missing</span>`;
+  const body = rows.map((o) => {
+    const cls = o.gap <= 0 ? "in" : "", c = (v, x = "") => `<span class="${[cls, x, o.r === R ? "cur" : ""].filter(Boolean).join(" ")}">${v}</span>`;
+    return c(`${o.r}${o.r === R ? " (now)" : ""}`) + [1, 2, 3].map((z) => c(f2(at(o.r, z)), z === Z ? "r zc-me" : "r")).join("") + c(o.gap <= 0 ? "solo" : `+${f2(o.gap)}`, "r l");
   }).join("");
-  const sum = kill == null ? `Even Rebirth ${R + 40} can't solo a ${(H / 1e9).toFixed(1)}B Turkey with this setup.`
-    : kill === R ? `You can already solo a ${(H / 1e9).toFixed(1)}B Turkey in zone 3.`
-    : `Solo a ${(H / 1e9).toFixed(1)}B Turkey in zone 3 from <b>Rebirth ${kill}</b>${comfy != null && comfy !== kill ? `, with 0:30 to spare from <b>Rebirth ${comfy}</b>` : ""}.`;
-  out.innerHTML = `<div class="alt-aim" style="margin-top:8px">${sum}</div><div class="alt-pt rb" title="DPS in millions. Solo: time left when the main alone kills it in zone 3.">${head}${body}</div><div class="alt-pmsg">DPS in millions. Solo: time left when the main alone kills it in zone 3. +5% per rebirth, zone 2 about +4% and zone 3 about +7.8% over zone 1, same pets and enchants.</div>`;
+  const last = rows[rows.length - 1], solo = rows.find((o) => o.gap <= 0), hb = (H / 1e9).toFixed(1);
+  const sum = solo ? (solo.r === rows[0].r ? `You can already solo a ${hb}B Turkey in zone 3.` : `Solo a ${hb}B Turkey in zone 3 from <b>Rebirth ${solo.r}</b>.`)
+    : `At Rebirth ${MAX_REBIRTH} in zone 3 you'd do ${f2(at(MAX_REBIRTH, 3))}M: an alt still needs <b>+${f2(last.gap)}M</b> to kill a ${hb}B Turkey.`;
+  out.innerHTML = `<div class="alt-aim" style="margin-top:8px">${sum}</div><div class="alt-pt rb">${head}${body}</div><div class="alt-pmsg">DPS in millions. Missing: what an alt must add to the main in zone 3 for the Turkey to die with 0:10 left (${f2(need)}M total). +5% per rebirth, zone 2 about +4% and zone 3 about +7.8% over zone 1, same pets and enchants.</div>`;
 }
 try { const rb = JSON.parse(localStorage.getItem("p4.rb") || "null"); if (Array.isArray(rb)) RB.forEach((id, i) => { if (rb[i]) $(id).value = rb[i]; }); } catch (e) {}
 RB.forEach((id) => { $(id).addEventListener("input", rbCalc); });
