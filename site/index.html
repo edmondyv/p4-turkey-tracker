@@ -353,6 +353,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .alt-h .hpin .f:focus-within{border-color:var(--caramel)}
 .alt-h .hpin input{width:34px;border:0;background:none;color:var(--ink);font:600 14px var(--display);padding:3px 0;outline:none;text-align:right}
 .alt-h .hpin i{font-style:normal;color:var(--dim);font-weight:700;font-size:12px}
+.alt-need{font-size:11.5px;font-weight:600;color:var(--dim);margin:-4px 0 8px;text-align:right}
+.alt-need b{color:var(--ink)}
 .alt-in{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .alt-in label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;font-weight:600;color:var(--mute);min-width:0}
 .alt-in .f{display:flex;align-items:center;gap:4px;background:var(--deep);border:2px solid var(--line);border-radius:10px;padding:0 8px;transition:border-color .15s}
@@ -552,11 +554,12 @@ footer{align-items:center}
       <div class="pairs" id="pairs"></div>
       <div class="alt" id="altCalc">
         <div class="alt-h"><h3>Alt timer</h3><label class="mute hpin">Turkey HP on your server<span class="f"><input id="acH" inputmode="decimal" autocomplete="off" value="7"><i>B</i></span></label></div>
+        <div class="alt-need" id="acNeed"></div>
         <div class="alt-in">
           <label>Main DPS<span class="f"><input id="acM" inputmode="decimal" autocomplete="off" value="6.35"><i>M</i></span></label>
           <label>Alt DPS<span class="f"><input id="acA" inputmode="decimal" autocomplete="off" value="1.35"><i>M</i></span></label>
         </div>
-        <div class="alt-tip">Read both DPS late in the fight, 5 minutes in or more. The game shows an average since the Turkey landed, so it creeps up during the first minutes, and it's lower if you started late.</div>
+        <div class="alt-tip">Read the DPS 5 minutes or more into the fight.</div>
         <div id="acRes" aria-live="polite">
           <div class="alt-lbl">The alt stays the whole fight</div>
           <div class="alt-afk" id="acAfk"></div>
@@ -570,16 +573,15 @@ footer{align-items:center}
             <div id="acPets"></div>
           </details>
           <details class="alt-pets" id="anBox"><summary>Real DPS after a pet swap</summary>
-            <div class="alt-pmsg" style="margin-top:6px">The game shows the average since the Turkey landed, so it drifts slowly after a swap. After swapping, note the Turkey timer and the alt's DPS twice, at least a minute apart.</div>
-            <div class="alt-in two-r">
-              <label>1st: timer<span class="f"><input id="anT1" inputmode="decimal" autocomplete="off" placeholder="12:00"></span></label>
-              <label>DPS<span class="f"><input id="anD1" inputmode="decimal" autocomplete="off" placeholder="1.39"><i>M</i></span></label>
-              <label>2nd: timer<span class="f"><input id="anT2" inputmode="decimal" autocomplete="off" placeholder="11:00"></span></label>
-              <label>DPS<span class="f"><input id="anD2" inputmode="decimal" autocomplete="off" placeholder="1.41"><i>M</i></span></label>
+            <div class="alt-pmsg" style="margin-top:6px">After the swap: note the DPS, start a stopwatch, note it again 30 s or more later. Fill in right away.</div>
+            <div class="alt-in three">
+              <label>DPS at start<span class="f"><input id="anD1" inputmode="decimal" autocomplete="off" placeholder="1.45"><i>M</i></span></label>
+              <label>Stopwatch<span class="f"><input id="anDt" inputmode="decimal" autocomplete="off" placeholder="0:40"></span></label>
+              <label>DPS at end<span class="f"><input id="anD2" inputmode="decimal" autocomplete="off" placeholder="1.46"><i>M</i></span></label>
             </div>
             <div id="anOut"></div>
           </details>
-          <div class="alt-lbl">Or the alt leaves early, when the Turkey timer shows</div>
+          <div class="alt-lbl">Or the alt leaves early, at</div>
           <div class="alt-out" id="acOut"></div>
         </div>
         <div class="alt-note" id="acNote"></div>
@@ -1180,6 +1182,7 @@ function altCalc() {
   const notch = (x) => (x == null ? null : Math.max(1e4, Math.floor((x - 1e4) / 1e4 + 1e-6) * 1e4));
   const M = notch(numIn($("acM").value, 1e5, 1e6)), A = notch(numIn($("acA").value, 1e5, 1e6)), S = TURKEY_LIFE, H = numIn($("acH").value, 1e8, 1e9) || 7e9;
   const fm = (x) => (x / 1e6).toFixed(2);
+  $("acNeed").innerHTML = `Needs <b>${fm(H / S)}M</b> total to kill, <b>${fm(H / (S - 30))}M</b> for 0:30 left`;
   try { localStorage.setItem("p4.altcalc2", JSON.stringify(AC.map((id) => $(id).value))); } catch (e) {}
   const res = $("acRes");
   if (!M || !A) { res.hidden = true; $("acNote").textContent = "Fill in both DPS values."; return; }
@@ -1192,8 +1195,8 @@ function altCalc() {
   const zoneTxt = { bad: both > S ? "Won't die in time" : "Too tight", warn: "A bit tight", ok: "In the target window", over: "More than needed" }[zone];
   $("acAfk").innerHTML = `<div class="tl ${zone}"><b class="num">${both > S ? "–" : mmss(left)}</b></div><div><span class="zc ${zone}">${zoneTxt}</span><small>${both > S ? `Together it takes ${mmss(both)}` : "left when it dies"}<br>Aim for 0:30 to 1:00</small></div><div class="v"><b class="num">${afkPts.toLocaleString("en-US")}</b><small>main per Turkey</small></div>`;
   const aFor = (sp) => H / (S - sp) - M, a30 = aFor(30), a60 = aFor(60), kd = (x) => (Math.abs(x) >= 1e6 ? `${(Math.abs(x) / 1e6).toFixed(2)}M` : `${Math.round(Math.abs(x) / 1e3)}k`);
-  $("acAim").innerHTML = a30 <= 0 ? "" : `Alt DPS for 0:30 to 1:00 left: <b>${fm(a30)}M to ${fm(a60)}M</b>, the main then gets ${pts(M / (M + a30))} to ${pts(M / (M + a60))}. ` +
-    (A < a30 ? `You're at ${fm(A)}M: add <b>${kd(a30 - A)} to ${kd(a60 - A)}</b>.` : A > a60 ? `You're at ${fm(A)}M, ${kd(A - a60)} above: weaker pets give the main more points.` : `You're at ${fm(A)}M, in the window.`);
+  $("acAim").innerHTML = a30 <= 0 ? "" : `Alt target <b>${fm(a30)}–${fm(a60)}M</b>` +
+    (A < a30 ? `: add <b>${kd(a30 - A)}–${kd(a60 - A)}</b>` : A > a60 ? `: ${kd(A - a60)} too strong, weaker pets give the main more` : `: you're in it`);
   // Pets: assume the alt's DPS is proportional to its 15 pets' damage, calibrated on the team it has now
   const ps = numIn($("apS").value, 1e4, 1e3), pw = numIn($("apW").value, 1e4, 1e3), pn = Math.round(Number($("apN").value));
   try { localStorage.setItem("p4.altpets", JSON.stringify(AP.map((id) => $(id).value))); } catch (e) {}
@@ -1207,44 +1210,46 @@ function altCalc() {
     const cell = (o, v, cls = "") => `<span class="${[inW(o) ? "in" : "", o.n === pn ? "cur" : "", cls].filter(Boolean).join(" ")}">${v}</span>`;
     const rowsHtml = show.map((o) => cell(o, `${o.n} + ${15 - o.n}${o.n === pn ? " (now)" : ""}`) + cell(o, `${fm(o.a)}M`, "r") + cell(o, o.ok ? mmss(o.left) : "–", "r l") + cell(o, pts(o.main), "r")).join("");
     const best = opts.filter(inW);
-    const msg = best.length ? `Strong + weak pets out of 15. Green rows land in the 0:30 to 1:00 window.`
+    const msg = best.length ? `Green: 0:30 to 1:00 left.`
       : opts[15].ok && opts[15].left < 30 ? `Even 15 strong pets only leave ${mmss(opts[15].left)}: the alt needs stronger pets.`
       : !opts[15].ok ? `Even 15 strong pets don't kill it in time: the alt needs stronger pets.`
       : `Even 15 weak pets leave more than 1:00: weaker pets would give the main more points.`;
     $("acPets").innerHTML = `<div class="alt-pt"><span class="h">Strong + weak</span><span class="h r">Alt DPS</span><span class="h r">Left</span><span class="h r">Main</span>${rowsHtml}</div>` +
-      `<div class="alt-pmsg">${msg} Assumes the alt's DPS follows its pets' total damage: ${(sum0 / 1e3).toFixed(1)}k now for ${fm(A)}M, about ×${kf.toFixed(2)}. Check after a swap and adjust.</div>`;
+      `<div class="alt-pmsg">${msg}</div>`;
   }
   if (solo <= S - 60) {
     $("acOut").innerHTML = `<div style="grid-column:1/-1"><b class="w">No alt needed</b><small>The main alone kills it with ${mmss(S - solo)} left and keeps the full 1,000.</small></div>`;
-    $("acNote").textContent = `Uses ${fm(M)}M, a notch under what you typed. Main alone needs ${mmss(solo)}.`;
+    $("acNote").textContent = "";
     return;
   }
   $("acOut").innerHTML = [10, 30, 60].map((m) => {
     const F = S - m; let big, l1, l2, w = false;
     if (solo <= F) { big = "No alt"; w = true; l1 = `Main alone: ${mmss(S - solo)} left`; l2 = "Main <b>1,000</b>"; }
-    else if (both > F) { w = true; big = both <= S ? "Stay all fight" : "Too slow"; l1 = both <= S ? `Dies with ${mmss(S - both)} left` : "Won't die in time"; l2 = `Main <b>${pts(M / (M + A))}</b>`; }
-    else { const t = (H - M * F) / A; big = mmss(Math.floor(S - t)); l1 = `Main <b>${pts(1 - (A * t) / H)}</b>`; l2 = `Covers a ${Math.round((100 * m) / S)}% DPS dip`; }
-    return `<div class="${m === 60 ? "pick" : ""}"><small>${m < 60 ? m + " s" : m / 60 + " min"} to spare</small><b class="num${w ? " w" : ""}">${big}</b><small>${l1}</small><small>${l2}</small></div>`;
+    else if (both > F) { w = true; big = both <= S ? "Stay" : "Too slow"; l1 = both <= S ? `${mmss(S - both)} left` : "Won't die in time"; l2 = `Main <b>${pts(M / (M + A))}</b>`; }
+    else { const t = (H - M * F) / A; big = mmss(Math.floor(S - t)); l1 = `Main <b>${pts(1 - (A * t) / H)}</b>`; l2 = ""; }
+    return `<div class="${m === 60 ? "pick" : ""}"><small>${m < 60 ? m + " s" : m / 60 + " min"} to spare</small><b class="num${w ? " w" : ""}">${big}</b><small>${l1}</small>${l2 ? `<small>${l2}</small>` : ""}</div>`;
   }).join("");
-  $("acNote").textContent = `Uses ${fm(M)}M and ${fm(A)}M, a notch under what you typed, to be safe. Main alone would need ${mmss(solo)}${solo > S ? ", too long for 15:00" : ""}. Points assume 1,000 per kill, split by damage.`;
+  $("acNote").textContent = "";
 }
 try { const sv = JSON.parse(localStorage.getItem("p4.altcalc2") || "null"); if (Array.isArray(sv)) AC.forEach((id, i) => { if (sv[i]) $(id).value = sv[i]; }); } catch (e) {}
-// Real DPS after a swap. The game shows total damage / time since the Turkey landed, so the damage
-// dealt between two readings, divided by the time between them, is the alt's DPS now.
-const AN = ["anT1", "anD1", "anT2", "anD2"];
-const tIn = (v) => { const m = String(v).trim().match(/^(\d{1,2})\s*[:.,h ]\s*(\d{1,2})$/) || String(v).trim().match(/^(\d{1,2})(\d{2})$/); return m ? +m[1] * 60 + +m[2] : null; };
+// Real DPS after a swap. The game shows total damage / time since the Turkey landed (t), so with two
+// readings Δt apart: DPS now = D1 + t × (D2 − D1) / Δt. t comes from the Turkey schedule (one every
+// 20 min, at :00, :20 and :40) at the moment the values are typed; an error of a few seconds there
+// barely moves the result, because D2 − D1 is small.
+const AN = ["anD1", "anDt", "anD2"]; let anAt = null;
+const durIn = (v) => { const x = String(v).trim(); const m = x.match(/^(\d{1,2})\s*[:.,m ]\s*(\d{1,2})\s*s?$/); if (m) return +m[1] * 60 + +m[2]; const n = parseFloat(x.replace(",", ".")); return isFinite(n) && n > 0 ? n : null; };
 function altNow() {
-  const [r1, r2] = [["anT1", "anD1"], ["anT2", "anD2"]].map(([t, d]) => { const left = tIn($(t).value), dps = numIn($(d).value, 1e5, 1e6); return left != null && left <= TURKEY_LIFE && dps ? { t: TURKEY_LIFE - left, d: dps } : null; });
-  const out = $("anOut");
-  if (!r1 || !r2) { out.innerHTML = ""; return; }
-  const [a, b] = r1.t <= r2.t ? [r1, r2] : [r2, r1], dt = b.t - a.t;
-  if (dt < 20) { out.innerHTML = '<div class="alt-pmsg">The two readings need to be further apart: a minute or more.</div>'; return; }
-  const v = (b.d * b.t - a.d * a.t) / dt, err = (5e3 * (a.t + b.t) + 0.5 * (a.d + b.d)) / dt;
-  if (!(v > 0)) { out.innerHTML = '<div class="alt-pmsg">Those readings don\'t add up: check the timers.</div>'; return; }
-  out.innerHTML = `<div class="an-res"><div><b class="num">${(v / 1e6).toFixed(2)}M</b><small>alt DPS now, give or take ${Math.round(err / 1e3)}k${dt < 60 ? ". Wait longer for a closer number" : ""}</small></div><button type="button" id="anUse">Use as alt DPS</button></div>`;
+  const d1 = numIn($("anD1").value, 1e5, 1e6), d2 = numIn($("anD2").value, 1e5, 1e6), dt = durIn($("anDt").value), out = $("anOut");
+  if (!d1 || !d2 || !dt) { out.innerHTML = ""; return; }
+  const at = anAt || Date.now() / 1000, t = at - Math.floor(at / 1200) * 1200;
+  if (t > TURKEY_LIFE + 30) { out.innerHTML = '<div class="alt-pmsg">No Turkey is up right now: do this during a fight.</div>'; return; }
+  if (dt >= t) { out.innerHTML = '<div class="alt-pmsg">The stopwatch is longer than the Turkey has been up: check it.</div>'; return; }
+  const v = d1 + Math.min(t, TURKEY_LIFE) * (d2 - d1) / dt;
+  if (!(v > 0)) { out.innerHTML = '<div class="alt-pmsg">Those values don\'t add up: check them.</div>'; return; }
+  out.innerHTML = `<div class="an-res"><div><b class="num">${(v / 1e6).toFixed(2)}M</b><small>alt DPS now. Turkey up ${mmss(Math.min(t, TURKEY_LIFE))} when you typed${dt < 30 ? ". A longer stopwatch gives a closer number" : ""}</small></div><button type="button" id="anUse">Use as alt DPS</button></div>`;
   $("anUse").onclick = () => { $("acA").value = (v / 1e6).toFixed(2); altCalc(); };
 }
-AN.forEach((id) => { $(id).addEventListener("input", altNow); });
+AN.forEach((id) => { $(id).addEventListener("input", () => { anAt = Date.now() / 1000; altNow(); }); });
 try { const sp = JSON.parse(localStorage.getItem("p4.altpets") || "null"); if (Array.isArray(sp)) AP.forEach((id, i) => { if (sp[i]) $(id).value = sp[i]; }); } catch (e) {}
 [...AC, ...AP].forEach((id) => { $(id).addEventListener("input", altCalc); });
 altCalc();
