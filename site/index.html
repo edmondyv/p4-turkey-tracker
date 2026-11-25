@@ -381,7 +381,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 .alt-pets{margin-top:10px;background:rgba(255,241,224,.04);border-radius:12px;padding:8px 10px}
 .alt-pets summary{cursor:pointer;font-size:12px;font-weight:800;color:var(--ink);list-style-position:inside}
 .alt-pets .alt-in{margin-top:8px}
-.alt-in.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.alt-in input::placeholder,.alt-h .hpin input::placeholder{color:var(--dim);opacity:.55}
+.alt-in.three{grid-template-columns:repeat(3,minmax(0,1fr));align-items:end}
+.alt-in .lbx{font-size:10.5px;font-weight:600;color:var(--dim);white-space:nowrap}
 .alt-in.two-r{grid-template-columns:repeat(2,minmax(0,1fr))}
 .an-res{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;background:rgba(255,241,224,.06);border-radius:10px;padding:7px 10px}
 .an-res b{font:600 20px var(--display)} .an-res small{display:block;font-size:11px;color:var(--mute);font-weight:600}
@@ -392,6 +394,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .alt-pt>span.in{background:#2c4f2e} .alt-pt>span.in.l{color:var(--leaf)}
 .alt-pt>span.cur{box-shadow:inset 0 2px 0 var(--line),inset 0 -2px 0 var(--line)}
 .alt-pt>span.r{text-align:right}
+.alt-pt.rb{grid-template-columns:minmax(0,1.25fr) repeat(3,minmax(0,1fr)) minmax(0,.85fr)}
+.alt-pt>span.zc-me{color:var(--caramel)}
 .alt-pt>span.kill{background:#4a4220} .alt-pt>span.kill.l{color:#ffd166}
 .alt-pt>span.gap{padding:0 6px;color:var(--dim);font-size:11px;line-height:1}
 .alt-pmsg{font-size:11.5px;color:var(--dim);font-weight:600;margin-top:6px;line-height:1.4}
@@ -555,11 +559,11 @@ footer{align-items:center}
       <header><h2>Squad</h2><span class="mute" id="squadNote">Checked on every Turkey</span></header>
       <div class="pairs" id="pairs"></div>
       <div class="alt" id="altCalc">
-        <div class="alt-h"><h3>Alt timer</h3><label class="mute hpin">Turkey HP on your server<span class="f"><input id="acH" inputmode="decimal" autocomplete="off" value="7"><i>B</i></span></label></div>
+        <div class="alt-h"><h3>Alt timer</h3><label class="mute hpin">Turkey HP on your server<span class="f"><input id="acH" inputmode="decimal" autocomplete="off" value="8.7"><i>B</i></span></label></div>
         <div class="alt-need" id="acNeed"></div>
         <div class="alt-in">
-          <label>Main DPS<span class="f"><input id="acM" inputmode="decimal" autocomplete="off" value="6.35"><i>M</i></span></label>
-          <label>Alt DPS<span class="f"><input id="acA" inputmode="decimal" autocomplete="off" value="1.35"><i>M</i></span></label>
+          <label>Main DPS<span class="f"><input id="acM" inputmode="decimal" autocomplete="off" placeholder="6.35"><i>M</i></span></label>
+          <label>Alt DPS<span class="f"><input id="acA" inputmode="decimal" autocomplete="off" placeholder="1.35"><i>M</i></span></label>
         </div>
         <div class="alt-tip">Read the DPS 5 minutes or more into the fight.</div>
         <div id="acRes" aria-live="polite">
@@ -568,9 +572,9 @@ footer{align-items:center}
           <div class="alt-aim" id="acAim"></div>
           <details class="alt-pets" open><summary>Pet swap helper</summary>
             <div class="alt-in three">
-              <label>Strong pet<span class="f"><input id="apS" inputmode="decimal" autocomplete="off" value="75.8"><i>k</i></span></label>
-              <label>Weak pet<span class="f"><input id="apW" inputmode="decimal" autocomplete="off" value="43.7"><i>k</i></span></label>
-              <label>Strong now<span class="f"><input id="apN" inputmode="numeric" autocomplete="off" value="10"><i>/15</i></span></label>
+              <label>Strong pet<span class="f"><input id="apS" inputmode="decimal" autocomplete="off" placeholder="75.8"><i>k</i></span></label>
+              <label>Weak pet<span class="f"><input id="apW" inputmode="decimal" autocomplete="off" placeholder="43.7"><i>k</i></span></label>
+              <label>Strong now<span class="f"><input id="apN" inputmode="numeric" autocomplete="off" placeholder="10"><i>/15</i></span></label>
             </div>
             <div id="acPets"></div>
           </details>
@@ -588,9 +592,9 @@ footer{align-items:center}
         </div>
         <details class="alt-pets" open id="rbBox"><summary>Rebirth planner</summary>
           <div class="alt-in three">
-            <label>Rebirth<span class="f"><input id="rbR" inputmode="numeric" autocomplete="off" value="11"></span></label>
-            <label>Zone<span class="f"><input id="rbZ" inputmode="numeric" autocomplete="off" value="1"><i>/3</i></span></label>
-            <label>DPS there<span class="f"><input id="rbD" inputmode="decimal" autocomplete="off" value="6.76"><i>M</i></span></label>
+            <label>Rebirth<span class="f"><input id="rbR" inputmode="numeric" autocomplete="off" placeholder="11"></span></label>
+            <label>Zone <small class="lbx">(new island)</small><span class="f"><input id="rbZ" inputmode="numeric" autocomplete="off" placeholder="1"><i>/3</i></span></label>
+            <label>DPS there<span class="f"><input id="rbD" inputmode="decimal" autocomplete="off" placeholder="6.76"><i>M</i></span></label>
           </div>
           <div id="rbOut"></div>
         </details>
@@ -1190,7 +1194,7 @@ const mmss = (t) => { t = Math.max(0, Math.round(t)); return `${Math.floor(t / 6
 function altCalc() {
   // one notch (0.01M) under what was typed: the game rounds its display, and lower DPS keeps the alt longer (safer)
   const notch = (x) => (x == null ? null : Math.max(1e4, Math.floor((x - 1e4) / 1e4 + 1e-6) * 1e4));
-  const M = notch(numIn($("acM").value, 1e5, 1e6)), A = notch(numIn($("acA").value, 1e5, 1e6)), S = TURKEY_LIFE, H = numIn($("acH").value, 1e8, 1e9) || 7e9;
+  const M = notch(numIn($("acM").value, 1e5, 1e6)), A = notch(numIn($("acA").value, 1e5, 1e6)), S = TURKEY_LIFE, H = numIn($("acH").value, 1e8, 1e9) || 8.7e9;
   const fm = (x) => (x / 1e6).toFixed(2);
   $("acNeed").innerHTML = `Needs <b>${fm(H / S)}M</b> total to kill, <b>${fm(H / (S - 30))}M</b> for 0:30 left`;
   try { localStorage.setItem("p4.altcalc2", JSON.stringify(AC.map((id) => $(id).value))); } catch (e) {}
@@ -1269,7 +1273,7 @@ function rbCalc() {
   const R = Math.round(Number($("rbR").value)), Z = Math.round(Number($("rbZ").value)), D = numIn($("rbD").value, 1e5, 1e6), out = $("rbOut");
   try { localStorage.setItem("p4.rb", JSON.stringify(RB.map((id) => $(id).value))); } catch (e) {}
   if (!(R >= 0 && R <= 200) || !(Z >= 1 && Z <= 3) || !D) { out.innerHTML = '<div class="alt-pmsg">Fill in your rebirth, the zone (1 to 3) and the DPS you see there.</div>'; return; }
-  const H = numIn($("acH").value, 1e8, 1e9) || 7e9, S = TURKEY_LIFE, base = D / ((1 + 0.05 * R) * ZONE_X[Z - 1]);
+  const H = numIn($("acH").value, 1e8, 1e9) || 8.7e9, S = TURKEY_LIFE, base = D / ((1 + 0.05 * R) * ZONE_X[Z - 1]);
   const at = (r, z) => base * (1 + 0.05 * r) * ZONE_X[z - 1], f2 = (x) => (x / 1e6).toFixed(2);
   const rows = []; let kill = null, comfy = null;
   for (let r = R; r <= R + 40; r++) {
@@ -1280,16 +1284,16 @@ function rbCalc() {
     if (comfy != null && r >= comfy + 1) break;
   }
   const show = rows.length > 14 ? rows.filter((o, i) => i === 0 || i >= rows.length - 12) : rows;
-  const head = Z < 3 ? `<span class="h">Rebirth</span><span class="h r">Zone ${Z}</span><span class="h r">Zone 3</span><span class="h r">Solo</span>` : `<span class="h">Rebirth</span><span class="h r">Zone 3</span><span class="h r"></span><span class="h r">Solo</span>`;
+  const head = `<span class="h">Rebirth</span><span class="h r">Zone 1</span><span class="h r">Zone 2</span><span class="h r">Zone 3</span><span class="h r">Solo</span>`;
   const body = show.map((o, i) => {
     const cls = o.r === comfy ? "in" : o.r === kill ? "kill" : "", c = (v, x = "") => `<span class="${[cls, x, o.r === R ? "cur" : ""].filter(Boolean).join(" ")}">${v}</span>`;
-    const gap = i > 0 && show[i - 1].r !== o.r - 1 ? `<span class="gap">…</span><span class="gap"></span><span class="gap"></span><span class="gap"></span>` : "";
-    return gap + c(`${o.r}${o.r === R ? " (now)" : ""}`) + c(`${f2(Z < 3 ? o.dz : o.d3)}M`, "r") + c(Z < 3 ? `${f2(o.d3)}M` : "", "r") + c(o.left >= 0 ? `${mmss(o.left)} left` : "–", "r l");
+    const gap = i > 0 && show[i - 1].r !== o.r - 1 ? `<span class="gap">…</span>${'<span class="gap"></span>'.repeat(4)}` : "";
+    return gap + c(`${o.r}${o.r === R ? " (now)" : ""}`) + [1, 2, 3].map((z) => c(`${f2(at(o.r, z))}`, z === Z ? "r zc-me" : "r")).join("") + c(o.left >= 0 ? `${mmss(o.left)}` : "–", "r l");
   }).join("");
   const sum = kill == null ? `Even Rebirth ${R + 40} can't solo a ${(H / 1e9).toFixed(1)}B Turkey with this setup.`
     : kill === R ? `You can already solo a ${(H / 1e9).toFixed(1)}B Turkey in zone 3.`
     : `Solo a ${(H / 1e9).toFixed(1)}B Turkey in zone 3 from <b>Rebirth ${kill}</b>${comfy != null && comfy !== kill ? `, with 0:30 to spare from <b>Rebirth ${comfy}</b>` : ""}.`;
-  out.innerHTML = `<div class="alt-aim" style="margin-top:8px">${sum}</div><div class="alt-pt rb">${head}${body}</div><div class="alt-pmsg">+5% per rebirth. Zone 2 is about +4% and zone 3 about +7.8% over zone 1. Same pets, enchants and potions as now.</div>`;
+  out.innerHTML = `<div class="alt-aim" style="margin-top:8px">${sum}</div><div class="alt-pt rb" title="DPS in millions. Solo: time left when the main alone kills it in zone 3.">${head}${body}</div><div class="alt-pmsg">DPS in millions. Solo: time left when the main alone kills it in zone 3. +5% per rebirth, zone 2 about +4% and zone 3 about +7.8% over zone 1, same pets and enchants.</div>`;
 }
 try { const rb = JSON.parse(localStorage.getItem("p4.rb") || "null"); if (Array.isArray(rb)) RB.forEach((id, i) => { if (rb[i]) $(id).value = rb[i]; }); } catch (e) {}
 RB.forEach((id) => { $(id).addEventListener("input", rbCalc); });
