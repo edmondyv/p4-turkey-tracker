@@ -28,7 +28,8 @@ jobs:
     env:
       DATA_DIR: out
       LEAGUE_NAME: P4
-      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+      NTFY_TOPIC: ""  # notifications switched off after the event (secret kept, just not passed)
+      STOP_AT: "1795820400"  # 2026-11-28 00:00 CET: stop collecting and disable this workflow
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       LOOP_MINUTES: ${{ github.event.inputs.loop_minutes || '0' }}
@@ -50,6 +51,7 @@ jobs:
               && git add -A && git commit -q -m "data $(date -u +%Y-%m-%dT%H:%MZ)" \
               && git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data) || echo "publish failed"
           }
+          if [ "$(date +%s)" -ge "$STOP_AT" ]; then echo "Event over: disabling the collector"; gh workflow disable collect.yml --repo "$GITHUB_REPOSITORY" || true; exit 0; fi
           mkdir -p out
           if [ "$LOOP_MINUTES" -le 0 ] && [ "$(fresh)" -lt 240 ]; then echo "Data is fresh (watch run active), skipping"; exit 0; fi
           git show origin/data:history.json > out/history.json 2>/dev/null || true
@@ -58,7 +60,7 @@ jobs:
             node scripts/collect.mjs || echo "collect failed"
             publish
             elapsed=$(( ($(date +%s) - start) / 60 ))
-            if [ "$LOOP_MINUTES" -le 0 ] || [ "$elapsed" -ge "$LOOP_MINUTES" ]; then break; fi
+            if [ "$LOOP_MINUTES" -le 0 ] || [ "$elapsed" -ge "$LOOP_MINUTES" ] || [ "$(date +%s)" -ge "$STOP_AT" ]; then break; fi
             # next wake-up when (time mod 5 min) = 4 min: :04, :09, :14 and :19 after each landing.
             # The :19 one (1 min before the next Turkey lands) is the reference snapshot.
             now=$(date +%s); wait=$(( (240 - now % 300 + 600) % 300 )); [ "$wait" -lt 30 ] && wait=$(( wait + 300 )); sleep "$wait"
@@ -66,4 +68,6 @@ jobs:
 
       - name: Start the next watch run
         if: ${{ always() && github.event.inputs.loop_minutes != '' && github.event.inputs.loop_minutes != '0' }}
-        run: gh workflow run collect.yml --repo "$GITHUB_REPOSITORY" --ref main -f loop_minutes="$LOOP_MINUTES"
+        run: |
+          if [ "$(date +%s)" -ge "$STOP_AT" ]; then gh workflow disable collect.yml --repo "$GITHUB_REPOSITORY" || true; exit 0; fi
+          gh workflow run collect.yml --repo "$GITHUB_REPOSITORY" --ref main -f loop_minutes="$LOOP_MINUTES"

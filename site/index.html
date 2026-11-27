@@ -1037,7 +1037,8 @@ async function load() {
   try { const r = await fetch(DATA_URL + (DATA_URL.includes("?") ? "&" : "?") + "t=" + Math.floor(Date.now() / 60000), { cache: "no-store" }); if (r.ok) { D = await r.json(); render(); } else throw new Error(r.status); }
   catch (e) { if (!D) { const b = $("banner"); b.className = "banner info show"; b.textContent = "Waiting for the first snapshot. The collector runs every 5 minutes."; } }
 }
-async function loadPresence() { try { const r = await fetch("/api/status", { cache: "no-store" }); if (r.ok) { P = await r.json(); if (D) renderSquad(D); } } catch (e) {} }
+const API_STOP = 1795820400; // 2026-11-28 00:00 CET: after the event the page stops calling its Vercel functions
+async function loadPresence() { if (Date.now() / 1000 >= API_STOP) return; try { const r = await fetch("/api/status", { cache: "no-store" }); if (r.ok) { P = await r.json(); if (D) renderSquad(D); } } catch (e) {} }
 load(); loadPresence(); setInterval(load, 60000); setInterval(loadPresence, 60000);
 
 // ---------- solo event (hidden: tap the apple 10 times to show or hide it)
