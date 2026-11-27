@@ -252,6 +252,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .so-box{background:var(--card2);border-radius:16px;padding:12px;min-width:0}
 .so-lbl{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;font-weight:700;color:var(--mute);margin:0 0 7px}
 .so-lbl span{color:var(--dim);font-weight:600}
+.so-lbl .vc{padding:4px 10px;font-size:12px;margin-left:0}
 .so-rar{display:flex;flex-wrap:wrap;gap:5px}
 .rc{display:inline-flex;align-items:center;gap:7px;border:2px solid var(--line);background:var(--deep);border-radius:999px;padding:5px 12px 5px 9px;transition:border-color .15s,background .15s}
 .rc i{width:10px;height:10px;border-radius:50%;background:var(--rc);box-shadow:0 0 0 3px var(--rcb)}
@@ -299,7 +300,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .tt tbody th small{display:block;font:700 10.5px var(--text);color:var(--dim);padding-left:15px}
 .tt td{padding:0}
 .tt td button{width:100%;display:block;border:2px solid transparent;background:var(--deep);border-radius:10px;padding:5px 3px;text-align:center;transition:border-color .15s,background .15s}
-.tt td button b{display:block;font:600 16px/1.15 var(--display)}
+.tt td button b{display:block;font:600 14px/1.15 var(--display);white-space:nowrap;letter-spacing:-.2px}
+.tt td button b .to{font:700 9.5px var(--text);color:var(--mute);margin-left:1px;letter-spacing:0}
 .tt td button small{display:block;font-size:10.5px;color:var(--dim);font-weight:700;line-height:1.3}
 .tt td button.on{border-color:var(--rc);background:var(--rcb)}
 .tt td button.nv b{color:var(--dim)}
@@ -692,7 +694,7 @@ footer{align-items:center}
         <div class="so-lbl">Threshold<span>points per net to beat</span></div>
         <div class="so-th"><span class="fld"><input id="soTh" inputmode="decimal" autocomplete="off" aria-label="Threshold in points per net"></span><span class="mute">points per net</span></div>
         <div class="so-pre" id="soPre"></div>
-        <div class="so-lbl" style="margin-top:14px">Lowest chance worth a net<span id="soShNote"></span></div>
+        <div class="so-lbl" style="margin-top:14px;align-items:center">Catch chance worth a net<span id="soShNote"></span></div>
         <table class="tt" id="soTab"></table>
         <p class="so-notes" id="soNotes"></p>
       </div>
@@ -1051,6 +1053,7 @@ const so = Object.assign({ r: "epic", v: "normal", sh: false, ch: "9", th: "r100
 const soSave = () => { try { localStorage.setItem("p4.solo.calc", JSON.stringify(so)); } catch (e) {} };
 const soNum = (v) => { const x = parseFloat(String(v).replace(",", ".")); return isFinite(x) && x > 0 ? x : null; };
 const soPct = (x) => (x >= 100 ? "never" : (x < 1 ? x.toFixed(2) : x < 10 ? x.toFixed(1) : String(Math.round(x))) + "%");
+const soRangeTxt = (x) => (x >= 100 ? "never" : `${soPct(x).replace("%", "")}<span class="to">–100%</span>`);
 const soFmt = (x) => (x < 1 ? x.toFixed(2) : x < 10 ? x.toFixed(1) : String(Math.round(x)));
 const soPts = (r, v) => r.p * v.m * (so.sh ? 3 : 1);
 const SO_RANKS = [1003, 500, 250, 100, 10, 1];
@@ -1088,11 +1091,11 @@ function soRender(fromInput) {
     $("soRes").innerHTML = `<div class="so-v ${cls}"><b class="num">${ev < 10 ? ev.toFixed(2) : ev.toFixed(1)}</b><span>points per net</span><em>${ratio >= 2 ? "Go for it" : ratio >= 1 ? "Worth a net" : "Skip it"}</em></div>
       <div class="so-facts"><span>Each catch<b class="num">${pts} pts</b></span><span>Vs threshold<b class="num">${ratio.toFixed(1)}×</b></span><span>Worth it from<b class="num">${soPct(be)}</b></span><span>Great from<b class="num">${soPct(gr)}</b></span></div>`;
   }
-  $("soShNote").textContent = so.sh ? "shiny included" : "";
+  $("soShNote").innerHTML = `<button type="button" class="vc v-shiny${so.sh ? " on" : ""}" data-sh="1" aria-pressed="${so.sh}">✦ Shiny ×3</button>`;
   $("soTab").innerHTML = `<thead><tr><th></th>${SO_V.map((x) => `<th>${x.n}<small>×${x.m * (so.sh ? 3 : 1)}</small></th>`).join("")}</tr></thead><tbody>` +
     SO_R.map((rr) => `<tr><th style="--rc:${rr.c}"><i></i>${rr.n}<small>${rr.p} pt${rr.p > 1 ? "s" : ""}</small></th>` + SO_V.map((vv) => {
       const p = soPts(rr, vv), t = (100 * b) / p, g = (200 * b) / p, on = rr === r && vv === v;
-      return `<td><button type="button" class="${on ? "on" : ""}${t >= 100 ? " nv" : ""}" style="--rc:${rr.c};--rcb:${rr.b}" data-r="${rr.k}" data-v="${vv.k}" aria-label="${rr.n} ${vv.n}: worth a net from ${soPct(t)}"><b class="num">${soPct(t)}</b><small>${p} pt${p > 1 ? "s" : ""}</small><small>great ${soPct(g)}</small></button></td>`;
+      return `<td><button type="button" class="${on ? "on" : ""}${t >= 100 ? " nv" : ""}" style="--rc:${rr.c};--rcb:${rr.b}" data-r="${rr.k}" data-v="${vv.k}" aria-label="${rr.n} ${vv.n}: worth a net from ${soPct(t)}"><b class="num">${soRangeTxt(t)}</b><small>${p} pt${p > 1 ? "s" : ""}</small><small>great ${soPct(g)}</small></button></td>`;
     }).join("") + "</tr>").join("") + "</tbody>";
 }
 function soBoard(d) {
